@@ -15,12 +15,20 @@ def worker_count():
         count, period = quota.read_text().split()
         if count != "max":
             cpus = min(cpus or 1, max(1, (int(count) + int(period)-1)//int(period)))
-    return max(1, min(cpus or 1, 48))
+    limit = 60 if os.name == "nt" else 128
+    return max(1, min(cpus or 1, limit))
 
 
 def submit(executor, observation, actions, seed, weights, opponent_weights=None):
-    return {action: [executor.submit(simulate_batch, observation, action, start, BATCH, seed, weights, opponent_weights)
-                     for start in range(0, OUTCOMES, BATCH)] for action in actions}
+    workers = worker_count()
+    games_per_worker = (OUTCOMES*len(actions) + workers-1)//workers
+    block = min(BATCH, max(1, games_per_worker))
+    return {
+        action: [executor.submit(simulate_batch, observation, action, start,
+                                 min(block, OUTCOMES-start), seed, weights, opponent_weights)
+                 for start in range(0, OUTCOMES, block)]
+        for action in actions
+    }
 
 
 def collect(observation, jobs):
