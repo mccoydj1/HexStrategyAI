@@ -16,7 +16,7 @@ The application loads the selected policy and the validated endgame search check
 
 - **Board** lets you place highlighted pieces or move the robber. Select an item in the move list and use **Play move** for any action, including ambiguous board targets, discards, cards, and supply exchanges.
 - **Trade** opens a bundle editor. An incoming offer gives you a choice to accept, decline, or counter. Use **Compare offer** to simulate a draft before sending it.
-- **Coach** compares up to three policy-selected actions, the highlighted action if different, and a representative domestic trade when available. You can continue playing while the simulations run. The results apply to the position you asked about.
+- **Coach** compares up to three policy-selected actions, the highlighted action if different, and a representative domestic trade when available. You can continue playing while the simulations run. The results apply to the position you asked about. Reopening the same comparison reuses its completed simulations until a move or difficulty change.
 - **Easy**, **Standard**, and **Hard** adjust the computer policy. **Save** and **Open** use a local replay file to resume any phase.
 
 See [Rules](RULES.md), [Architecture and evaluation](EVALUATION.md), and [Licensing and provenance](PROVENANCE.md).

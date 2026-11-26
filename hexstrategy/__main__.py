@@ -56,6 +56,8 @@ class Desktop:
         self.executor = None
         self.revision = 0
         self.hint_futures = ()
+        self.hint_timer = None
+        self.hint_cache = {}
         self.explicit_selection = False
         self.trade_window = None
         root.title("Hex Strategy")
@@ -121,7 +123,7 @@ class Desktop:
         self.footer = self.label(root)
         self.actions = []
         self.refresh()
-        root.after(200, self.ai_turn)
+        self.ai_timer = root.after(200, self.ai_turn)
 
     @property
     def game(self):
@@ -264,9 +266,7 @@ class Desktop:
 
     def move(self, action):
         self.session.step(action)
-        self.revision += 1
-        for future in self.hint_futures:
-            future.cancel()
+        self.invalidate_hints()
         self.refresh()
 
     def commit(self):
@@ -274,13 +274,22 @@ class Desktop:
         if selected:
             self.move(self.actions[selected[0]])
 
+    def invalidate_hints(self):
+        self.revision += 1
+        self.hint_cache.clear()
+        for future in self.hint_futures:
+            future.cancel()
+
     def set_difficulty(self, event):
-        self.session.difficulty = self.difficulty.get()
+        difficulty = self.difficulty.get()
+        if difficulty != self.session.difficulty:
+            self.session.difficulty = difficulty
+            self.invalidate_hints()
 
     def ai_turn(self):
         self.play_ai_move()
         delay = 475 if self.game.phase == "action" and self.game.actor != 0 else 175
-        self.root.after(delay, self.ai_turn)
+        self.ai_timer = self.root.after(delay, self.ai_turn)
 
     def play_ai_move(self):
         game = self.game
@@ -371,6 +380,10 @@ class Desktop:
             offer = suggested_offer(observation, self.weights)
             if offer:
                 candidates.append(offer)
+        key = tuple(candidates)
+        if key in self.hint_cache:
+            self.show_coaching(observation, self.hint_cache[key])
+            return
         if self.executor is None:
             self.executor = ProcessPoolExecutor(max_workers=worker_count())
         opponents = self.weights if self.session.difficulty == "Hard" else BASE
@@ -380,11 +393,12 @@ class Desktop:
         self.footer.configure(text=f"Coach is simulating {len(candidates)*OUTCOMES:,} continuations…")
 
         def check():
+            self.hint_timer = None
             completed = sum(future.done() for future in self.hint_futures)
             if completed < len(self.hint_futures):
                 progress = completed / len(self.hint_futures)
                 self.footer.configure(text=f"Coach simulations · {progress:.0%} complete")
-                self.root.after(250, check)
+                self.hint_timer = self.root.after(250, check)
                 return
             self.hint_futures = ()
             self.footer.configure(text="")
@@ -397,30 +411,33 @@ class Desktop:
             except Exception as error:
                 messagebox.showerror("Coach", str(error), parent=self.root)
                 return
-            window = tk.Toplevel(self.root)
-            window.title("Coaching results")
-            summary = ttk.Label(window, text=f"Compared {len(results)} moves · {len(observation.actions)} listed board and turn actions",
-                                padding=12)
-            summary.pack(anchor="w")
-            for rank, result in enumerate(results, 1):
-                lo, hi = result.interval
-                difference = results[0].probability-result.probability
-                comparison = f" {difference*100:.1f} percentage-point gap from the top estimate." if rank > 1 else ""
-                ttk.Label(window, text=f"{rank}. {action_name(result.action)}   ·   "
-                    f"{result.probability:.1%} win estimate   ·   95% interval {lo:.1%}–{hi:.1%}\n"
-                    f"{result.wins}/{result.games:,} wins, {result.unresolved} unfinished. "
-                    f"{result.explanation}{comparison}", wraplength=650, padding=(12, 5)).pack(anchor="w")
+            self.hint_cache[key] = results
+            self.show_coaching(observation, results)
 
-        self.root.after(250, check)
+        self.hint_timer = self.root.after(250, check)
+
+    def show_coaching(self, observation, results):
+        window = tk.Toplevel(self.root)
+        window.title("Coaching results")
+        summary = ttk.Label(window, text=f"Compared {len(results)} moves · {len(observation.actions)} listed board and turn actions",
+                            padding=12)
+        summary.pack(anchor="w")
+        for rank, result in enumerate(results, 1):
+            lo, hi = result.interval
+            difference = results[0].probability-result.probability
+            comparison = f" {difference*100:.1f} percentage-point gap from the top estimate." if rank > 1 else ""
+            ttk.Label(window, text=f"{rank}. {action_name(result.action)}   ·   "
+                f"{result.probability:.1%} win estimate   ·   95% interval {lo:.1%}–{hi:.1%}\n"
+                f"{result.wins}/{result.games:,} wins, {result.unresolved} unfinished. "
+                f"{result.explanation}{comparison}", wraplength=650, padding=(12, 5)).pack(anchor="w")
+
 
     def new(self):
         if self.session.moves and self.game.winner is None and not messagebox.askyesno(
                 "Start a new game", "Replace the current game?"):
             return
         self.session = Session(randbits(64), self.difficulty.get())
-        self.revision += 1
-        for future in self.hint_futures:
-            future.cancel()
+        self.invalidate_hints()
         self.refresh()
 
     def save(self):
@@ -438,9 +455,7 @@ class Desktop:
             try:
                 self.session = Session.load(path)
                 self.difficulty.set(self.session.difficulty)
-                self.revision += 1
-                for future in self.hint_futures:
-                    future.cancel()
+                self.invalidate_hints()
                 self.refresh()
             except (ValueError, TypeError, KeyError, OSError) as error:
                 messagebox.showerror("Open game", str(error))
@@ -454,6 +469,9 @@ class Desktop:
                             "See RULES.md for full controls and rules.")
 
     def close(self):
+        self.root.after_cancel(self.ai_timer)
+        if self.hint_timer is not None:
+            self.root.after_cancel(self.hint_timer)
         if self.executor:
             self.executor.shutdown(wait=False, cancel_futures=True)
         self.root.destroy()

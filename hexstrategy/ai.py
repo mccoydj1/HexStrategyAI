@@ -70,6 +70,7 @@ def ranked(obs, weights=BASE):
 
     accessible = None
     current_deficit = None
+    tile_denials = {}
 
     def value(action):
         nonlocal accessible, current_deficit
@@ -99,11 +100,13 @@ def ranked(obs, weights=BASE):
             return 10.5*weights[7] + 2*(points[seat] >= 7)
         if kind == "rob":
             t, victim = args
-            number = board.tiles[t].number
-            denial = sum(piece[1] * (-3 if piece[0] == seat else 1 + .22*points[piece[0]])
-                         for v in board.corners[t] if (piece := obs.buildings[v]))
+            if t not in tile_denials:
+                number = board.tiles[t].number
+                denial = sum(piece[1] * (-3 if piece[0] == seat else 1 + .22*points[piece[0]])
+                             for v in board.corners[t] if (piece := obs.buildings[v]))
+                tile_denials[t] = denial * (6-abs(7-number))
             theft = points[victim]*0.45+3 if victim is not None and obs.card_totals[victim] else 0
-            return denial * (6-abs(7-number)) + theft
+            return tile_denials[t] + theft
         if kind == "discard":
             remaining = tuple(h-n for h, n in zip(hand, args[0]))
             return -4*deficit(remaining) + sum(min(n, 3)*w for n, w in zip(remaining, weights))
@@ -195,7 +198,11 @@ def play(game, policies, turn_limit=450, record_history=True, decision=choose):
     game.record_history = record_history
     while game.winner is None and game.turn < turn_limit:
         actor = game.actor
-        action = decision(game.observe(actor), policies[actor])
+        actions = tuple(game.legal())
+        if decision is choose and len(actions) == 1 and actions[0] != ("end",):
+            action = actions[0]
+        else:
+            action = decision(game._observation(actor, actions), policies[actor])
         if action[0] == "offer":
             game.trade_offer(*action[1:])
         else:
@@ -429,6 +436,8 @@ def suggested_offer(obs, weights=BASE):
     if len(weights) == 14:
         return targeted_offer(obs, weights[-1])
     seat, hand = obs.seat, obs.hand
+    if max(hand) < 3:
+        return None
     needs = set()
     for kind in ("settlement", "city", "buy"):
         if kind == "buy" and not obs.deck_size:

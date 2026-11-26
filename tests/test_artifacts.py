@@ -29,3 +29,11 @@ class ReleasedEvidence(unittest.TestCase):
                 self.assertGreaterEqual(result["games"], 1000)
                 self.assertEqual(result["probability"], result["wins"]/result["games"])
                 self.assertEqual(tuple(result["interval"]), interval(result["wins"], result["games"]))
+
+    def test_optimized_rollouts_reproduce_the_original_seeded_estimates(self):
+        baseline = json.loads((ARTIFACTS / "coaching.json").read_text())
+        optimized = json.loads((ARTIFACTS / "coaching-optimized.json").read_text())
+        self.assertEqual(baseline["policy"], optimized["policy"])
+        for original, revised in zip(baseline["positions"], optimized["positions"], strict=True):
+            self.assertEqual({k: v for k, v in original.items() if k != "seconds"},
+                             {k: v for k, v in revised.items() if k != "seconds"})

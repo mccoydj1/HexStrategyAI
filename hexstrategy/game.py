@@ -105,6 +105,10 @@ class Game:
         return self.active
 
     def observe(self, seat):
+        actions = tuple(self.legal()) if seat == self.actor else ()
+        return self._observation(seat, actions)
+
+    def _observation(self, seat, actions):
         player = self.players[seat]
         return Observation(
             self.board, seat, self.active, self.phase, self.turn, self.setup,
@@ -113,7 +117,7 @@ class Game:
             tuple(len(p.cards) for p in self.players), tuple(player.hand),
             tuple(player.cards), tuple(p.knights for p in self.players),
             self.longest, self.army, tuple(self.history) if self.record_history else (),
-            tuple(self.legal() if seat == self.actor else ()), len(self.deck),
+            actions, len(self.deck),
             tuple(self.revealed), tuple(self.pending), self.free_roads, self.resume,
             self.used_card, self.offer, self.traded, tuple(self.seating),
         )
@@ -235,7 +239,10 @@ class Game:
                             if get != give and self.bank[get])
 
     def affords(self, seat, cost):
-        return all(h >= n for h, n in zip(self.players[seat].hand, cost))
+        wood, brick, wool, grain, ore = self.players[seat].hand
+        wood_cost, brick_cost, wool_cost, grain_cost, ore_cost = cost
+        return (wood >= wood_cost and brick >= brick_cost and wool >= wool_cost
+                and grain >= grain_cost and ore >= ore_cost)
 
     def trade_offer(self, target, give, get, sender=None):
         self.offer = self.validate_trade_offer(target, give, get, sender)
