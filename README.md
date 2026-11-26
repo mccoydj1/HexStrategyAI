@@ -12,7 +12,7 @@ Launch from the repository root.
 python -m hexstrategy
 ```
 
-The application loads the selected policy and the validated endgame search checkpoint when you launch it. The bundled policy runs locally with Python and Tcl/Tk.
+The application loads the selected policy and the validated placement and endgame search checkpoints when you launch it. The bundled policy runs locally with Python and Tcl/Tk.
 
 - **Board** lets you place highlighted pieces or move the robber. Select an item in the move list and use **Play move** for any action, including ambiguous board targets, discards, cards, and supply exchanges.
 - **Trade** opens a bundle editor. An incoming offer gives you a choice to accept, decline, or counter. Use **Compare offer** to simulate a draft before sending it.

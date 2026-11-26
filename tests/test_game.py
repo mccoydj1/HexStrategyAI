@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from hexstrategy.ai import BASE, choose, determinize, evaluate, interval, play, public_minimum, simulate_batch
+from hexstrategy.ai import BASE, choose, determinize, evaluate, explain, interval, play, public_minimum, simulate_batch
 from hexstrategy.board import RESOURCES
 from hexstrategy.game import COSTS, DECK, Game, SETUP
 from hexstrategy.session import Session
@@ -78,6 +78,18 @@ class Rules(unittest.TestCase):
         game.bank[resource] = 1
         game.produce(2)
         self.assertEqual(game.players[0].hand[resource], 3)
+
+    def test_coaching_explains_exchange_cost_and_discard_risk(self):
+        game = advance(Game(5))
+        game.phase = "action"
+        seat = game.active
+        grant(game, seat, wood=8)
+        observation = game.observe(seat)
+        exchange = next(action for action in observation.actions if action[:2] == ("bank", 0))
+        rate = game.rate(seat, 0)
+        self.assertIn(f"costs {rate} wood", explain(observation, exchange))
+        total = sum(observation.hand)
+        self.assertIn(f"returning {total//2}", explain(observation, ("end",)))
 
     def test_trades_and_rate(self):
         game = advance(Game(5))

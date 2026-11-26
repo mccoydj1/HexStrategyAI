@@ -8,7 +8,8 @@ from tkinter import filedialog, messagebox, ttk
 from .ai import BASE, choose, ranked, suggested_offer
 from .coach import OUTCOMES, collect, submit, worker_count
 from .board import RESOURCES
-from .session import Session, load_policy, load_search
+from .placement_trial import placement_choice
+from .session import Session, load_placement_search, load_policy, load_search
 from .tactical import tactical_choice
 
 INK = "#152b33"
@@ -53,6 +54,7 @@ class Desktop:
         self.session = Session(randbits(64))
         self.weights = load_policy()
         self.use_search = load_search(self.weights)
+        self.use_placement_search = self.use_search and load_placement_search(self.weights)
         self.executor = None
         self.revision = 0
         self.hint_futures = ()
@@ -296,8 +298,12 @@ class Desktop:
         if game.actor != 0 and game.winner is None and self.trade_window is None:
             observation = game.observe(game.actor)
             if self.session.difficulty == "Hard":
-                action = (tactical_choice(observation, self.weights) if self.use_search
-                          else choose(observation, self.weights))
+                policy = choose
+                if self.use_placement_search:
+                    policy = placement_choice
+                elif self.use_search:
+                    policy = tactical_choice
+                action = policy(observation, self.weights)
             elif self.session.difficulty == "Easy":
                 choices = ranked(observation, BASE)
                 pick = min(len(choices)-1, (len(self.session.moves)*7) % 3)

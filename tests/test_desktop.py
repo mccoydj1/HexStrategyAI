@@ -20,6 +20,7 @@ class DesktopMatch(unittest.TestCase):
                 desktop = Desktop(root)
             root.update()
             self.assertTrue(desktop.use_search)
+            self.assertTrue(desktop.use_placement_search)
             saved = False
             for _ in range(2500):
                 game = desktop.game

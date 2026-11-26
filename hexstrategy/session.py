@@ -25,16 +25,28 @@ def load_policy():
     return weights
 
 
+def _validated_search(weights, before, after, gained, lost):
+    return (tuple(after["weights"]) == tuple(before["weights"]) == weights
+            and after["games"] == before["games"] == 1000
+            and gained + lost > 0 and interval(gained, gained+lost)[0] > .5)
+
+
 def load_search(weights):
     path = ARTIFACTS / "tactical-holdout.json"
     if not path.exists():
         return False
     evidence = json.loads(path.read_text())
-    before, after = evidence["baseline"], evidence["searched"]
-    gained, lost = evidence["improved"], evidence["worsened"]
-    return (tuple(after["weights"]) == tuple(before["weights"]) == weights
-            and after["games"] == before["games"] == 1000
-            and gained + lost > 0 and interval(gained, gained+lost)[0] > .5)
+    return _validated_search(weights, evidence["baseline"], evidence["searched"],
+                             evidence["improved"], evidence["worsened"])
+
+
+def load_placement_search(weights):
+    path = ARTIFACTS / "placement-holdout.json"
+    if not path.exists():
+        return False
+    evidence = json.loads(path.read_text())
+    return _validated_search(weights, evidence["incumbent"], evidence["challenger"],
+                             evidence["gains"], evidence["losses"])
 
 
 class Session:
