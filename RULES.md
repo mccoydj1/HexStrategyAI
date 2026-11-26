@@ -2,7 +2,7 @@
 
 ## Establish your network
 
-Four players share an island of 19 hexes. Each productive hex shows a resource and a dice total. The first turn order is randomized. In that order, each player places one settlement and an adjacent road. Reverse the player order for the second settlement and road. The second settlement grants one card per adjacent productive hex. Any two buildings must have at least one empty intersection between them.
+Four players share an island of 19 hexes. Each productive hex shows a resource and a dice total. Terrain and harbor frames are shuffled. Tiles receive numbers on a spiral from a corner, skipping the desert. The first turn order is randomized. In that order, each player places one settlement and an adjacent road. Reverse the player order for the second settlement and road. The second settlement grants one card per adjacent productive hex. Any two buildings must have at least one empty intersection between them.
 
 ## Produce and act
 

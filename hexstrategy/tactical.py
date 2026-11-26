@@ -4,8 +4,9 @@ from dataclasses import asdict
 from hashlib import blake2b
 from random import Random
 from time import perf_counter
+import argparse
 
-from .ai import BASE, choose, determinize, interval, play, ranked, suggested_offer
+from .ai import BASE, choose, determinize, interval, play, public_minimum, ranked, suggested_offer
 from .coach import worker_count
 from .game import Game
 from .opening_search import seeds
@@ -31,11 +32,12 @@ def tactical_choice(obs, weights):
     rng = Random(int.from_bytes(fingerprint, "big"))
     worlds = [rng.getrandbits(64) for _ in range(4)]
     policies = tuple(weights if i == obs.seat else BASE for i in range(4))
+    minimum = public_minimum(obs)
 
     def wins(action):
         count = 0
         for seed in worlds:
-            simulated = determinize(obs, seed)
+            simulated = determinize(obs, seed, minimum)
             if action[0] == "offer":
                 simulated.trade_offer(*action[1:])
             else:
@@ -55,23 +57,33 @@ def trial(job):
                 record_history=search, decision=decision)
 
 
-def measure(pool, weights, batch, search):
-    outcomes = list(pool.map(trial, ((weights, seed, search) for seed in batch), chunksize=4))
-    wins = outcomes.count(0)
-    return Result(weights, len(outcomes), wins, outcomes.count(None), interval(wins, len(outcomes)))
+def outcomes(pool, weights, batch, search):
+    return list(pool.map(trial, ((weights, seed, search) for seed in batch), chunksize=4))
+
+
+def summary(weights, winners):
+    wins = winners.count(0)
+    return Result(weights, len(winners), wins, winners.count(None), interval(wins, len(winners)))
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--holdout", action="store_true")
+    args = parser.parse_args()
     start = perf_counter()
     weights = load_policy()
-    pilot_seed = 25511293
+    seed, count = (866482032, 1000) if args.holdout else (25511293, 192)
     with ProcessPoolExecutor(max_workers=worker_count()) as pool:
-        batch = seeds(pilot_seed, 192)
-        baseline = measure(pool, weights, batch, False)
-        searched = measure(pool, weights, batch, True)
-    save("tactical-pilot.json", dict(seed=pilot_seed, baseline=asdict(baseline),
-         searched=asdict(searched), seconds=perf_counter()-start))
-    print(baseline, searched, flush=True)
+        batch = seeds(seed, count)
+        baseline = outcomes(pool, weights, batch, False)
+        searched = outcomes(pool, weights, batch, True)
+    improved = sum(b != 0 and s == 0 for b, s in zip(baseline, searched))
+    worsened = sum(b == 0 and s != 0 for b, s in zip(baseline, searched))
+    name = "tactical-holdout.json" if args.holdout else "tactical-pilot.json"
+    save(name, dict(seed=seed, baseline=asdict(summary(weights, baseline)),
+         searched=asdict(summary(weights, searched)), improved=improved, worsened=worsened,
+         baseline_winners=baseline, search_winners=searched, seconds=perf_counter()-start))
+    print(summary(weights, baseline), summary(weights, searched), flush=True)
 
 
 if __name__ == "__main__":

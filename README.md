@@ -15,7 +15,7 @@ python -m hexstrategy
 The application loads the selected policy in `artifacts/policy.json` when you launch it. It runs locally and requires no account, network connection, or follow-up training.
 
 - **Board** lets you place highlighted pieces or move the robber. Select an item in the move list and use **Play move** for any action, including ambiguous board targets, discards, cards, and supply exchanges.
-- **Trade** opens a bundle editor. An incoming offer gives you a choice to accept, decline, or counter.
+- **Trade** opens a bundle editor. An incoming offer gives you a choice to accept, decline, or counter. Use **Compare offer** to simulate a draft before sending it.
 - **Coach** compares up to three policy-selected actions, the highlighted action if different, and a representative domestic trade when available. You can continue playing while the simulations run. The results apply to the position you asked about.
 - **Easy**, **Standard**, and **Hard** adjust the computer policy. **Save** and **Open** use a local replay file to resume any phase.
 
@@ -28,7 +28,11 @@ python -m unittest discover -s tests -v
 python -m hexstrategy.train --workers 2 --training-games 144 --candidates 20
 python -m hexstrategy.refine
 python -m hexstrategy.opening_search
+python -m hexstrategy.trade_search
+python -m hexstrategy.validate
 python -m hexstrategy.benchmark
+python -m hexstrategy.benchmark --profile
+python -m hexstrategy.tactical --holdout
 ```
 
 The display test skips when a graphical display is unavailable. With Xvfb installed, use `xvfb-run -a python -m unittest discover -s tests -v` to exercise a complete desktop match and save/resume through the GUI. Training commands replace the JSON outputs for their experiment.

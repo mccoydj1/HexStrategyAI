@@ -24,7 +24,7 @@ REASONS = {
     "roads": "Adds up to two connected roads without spending resources.",
     "accept": "Exchanges the offered bundles. Both players gain resources they requested.",
     "wait": "Makes no offer and lets the active player continue the turn.",
-    "offer": "Offers a surplus resource for a card that can enable a build; the recipient may refuse.",
+    "offer": "Trades the proposed bundle if the recipient accepts. The recipient may gain a useful resource too.",
     "decline": "Preserves your hand and avoids supplying the active player.",
 }
 
@@ -36,6 +36,20 @@ def site_values(board, weights):
         if board.tiles[t].resource) for tiles in board.adjoining)
 
 
+@lru_cache(maxsize=2048)
+def building_metrics(board, buildings):
+    owned = [[], [], [], []]
+    points = [0]*4
+    clear = []
+    for v, piece in enumerate(buildings):
+        if piece:
+            seat, level = piece
+            owned[seat].append(v)
+            points[seat] += level
+        clear.append(piece is None and not any(buildings[n] for n in board.neighbors[v]))
+    return tuple(map(tuple, owned)), tuple(points), tuple(clear)
+
+
 def ranked(obs, weights=BASE):
     if len(weights) in (10, 13, 14, 15):
         return strategic(obs, weights)
@@ -43,13 +57,12 @@ def ranked(obs, weights=BASE):
         return [(0, a) for a in obs.actions]
     board, seat, hand = obs.board, obs.seat, obs.hand
     sites = site_values(board, weights[:5])
-    owned = [v for v, piece in enumerate(obs.buildings) if piece and piece[0] == seat]
+    sites_by_player, base_points, clear = building_metrics(board, obs.buildings)
+    owned = sites_by_player[seat]
     covered = {board.tiles[t].resource for v in owned for t in board.adjoining[v]}
-    clear = [not piece and not any(obs.buildings[n] for n in board.neighbors[v])
-             for v, piece in enumerate(obs.buildings)]
     targets = [cost for kind, cost in COSTS.items() if kind != "city" or owned]
-    points = [sum(piece[1] for piece in obs.buildings if piece and piece[0] == p)
-              + 2*((obs.longest == p)+(obs.army == p)) for p in range(4)]
+    points = [n + 2*((obs.longest == p)+(obs.army == p))
+              for p, n in enumerate(base_points)]
 
     def deficit(resources):
         return min(sum(max(0, n-h) for n, h in zip(cost, resources))
@@ -210,10 +223,11 @@ def interval(wins, total):
     return max(0., center-offset), min(1., center+offset)
 
 
-def simulate_batch(obs, action, start, count, seed, weights):
+def simulate_batch(obs, action, start, count, seed, weights, opponent_weights=None):
     """Return actual wins and unfinished games in a disjoint seed range."""
     wins = unresolved = 0
     minimum = public_minimum(obs)
+    policies = tuple(weights if i == obs.seat else opponent_weights or weights for i in range(4))
     for index in range(start, start+count):
         world = Random(seed+index).getrandbits(64)
         game = determinize(obs, world, minimum)
@@ -221,7 +235,7 @@ def simulate_batch(obs, action, start, count, seed, weights):
             game.trade_offer(*action[1:])
         elif action != ("wait",):
             game.step(action)
-        winner = play(game, (weights,)*4, max(450, obs.turn+300), record_history=False)
+        winner = play(game, policies, max(450, obs.turn+300), record_history=False)
         wins += winner == obs.seat
         unresolved += winner is None
     return count, wins, unresolved
@@ -254,10 +268,11 @@ def strategic(obs, weights):
         return [(0, move) for move in obs.actions]
     seat, board = obs.seat, obs.board
     hand = obs.hand
-    owned = [v for v, piece in enumerate(obs.buildings) if piece and piece[0] == seat]
+    sites_by_player, base_points, clear = building_metrics(board, obs.buildings)
+    owned = sites_by_player[seat]
     own_roads = {e for e, owner in enumerate(obs.roads) if owner == seat}
-    scores = [sum(piece[1] for piece in obs.buildings if piece and piece[0] == p)
-              + 2*((obs.longest == p)+(obs.army == p)) for p in range(4)]
+    scores = [n + 2*((obs.longest == p)+(obs.army == p))
+              for p, n in enumerate(base_points)]
     own_score = scores[seat] + sum(card == "point" for card, _ in obs.cards)
     pips = production(board)
     totals = [sum(pips[v][i]*obs.buildings[v][1] for v in owned) for i in range(5)]
@@ -273,8 +288,6 @@ def strategic(obs, weights):
                     number_counts[number] = number_counts.get(number, 0) + 1
     scarcity = [weights[i]*(1.1 if not totals[i] else 0.9 if totals[i] < 6 else 0.65)
                 for i in range(5)]
-    clear = [not piece and not any(obs.buildings[n] for n in board.neighbors[v])
-             for v, piece in enumerate(obs.buildings)]
     connected = {v for e in own_roads for v in board.edges[e]}
     available = [v for v in connected if clear[v]]
     targets = {"city": 8 + weights[6], "buy": 6 + weights[7],

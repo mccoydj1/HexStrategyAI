@@ -331,8 +331,9 @@ class Game:
             self.dice = self.rng.randint(1, 6), self.rng.randint(1, 6)
             roll = sum(self.dice)
             if roll == 7:
-                self.pending = [p for i in range(4) if sum(
-                    self.players[p := self.seating[(self.seating.index(seat)+i)%4]].hand) > 7]
+                first = self.seating.index(seat)
+                order = self.seating[first:] + self.seating[:first]
+                self.pending = [p for p in order if sum(self.players[p].hand) > 7]
                 self.resume = "action"
                 self.phase = "discard" if self.pending else "robber"
             else:

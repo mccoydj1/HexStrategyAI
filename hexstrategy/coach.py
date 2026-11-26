@@ -18,8 +18,8 @@ def worker_count():
     return max(1, min(cpus or 1, 48))
 
 
-def submit(executor, observation, actions, seed, weights):
-    return {action: [executor.submit(simulate_batch, observation, action, start, BATCH, seed, weights)
+def submit(executor, observation, actions, seed, weights, opponent_weights=None):
+    return {action: [executor.submit(simulate_batch, observation, action, start, BATCH, seed, weights, opponent_weights)
                      for start in range(0, OUTCOMES, BATCH)] for action in actions}
 
 

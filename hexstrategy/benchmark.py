@@ -42,14 +42,18 @@ def main():
     game = Game(907)
     weights = load_policy()
     cases = [("opening", game.observe(game.actor))]
-    while game.turn < 36 or game.phase != "action":
+    while game.winner is None:
         obs = game.observe(game.actor)
+        if game.turn >= 36 and game.phase == "action" and len(obs.actions) >= 3:
+            cases.append(("midgame", obs))
+            break
         action = choose(obs, BASE)
         if action[0] == "offer":
             game.trade_offer(*action[1:])
         else:
             game.apply(action)
-    cases.append(("midgame", game.observe(game.actor)))
+    if len(cases) != 2:
+        raise RuntimeError("Benchmark seed did not produce a suitable midgame position.")
     results = []
     cpu = Path("/proc/cpuinfo")
     model = next((line.split(":", 1)[1].strip() for line in cpu.read_text().splitlines()
@@ -62,8 +66,6 @@ def main():
         for name, obs in cases:
             start = perf_counter()
             actions = [action for _, action in ranked(obs, weights)[:3]]
-            if obs.actions[0] not in actions:
-                actions.append(obs.actions[0])
             offer = suggested_offer(obs, weights)
             if offer:
                 actions.append(offer)

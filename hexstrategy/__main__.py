@@ -54,6 +54,7 @@ class Desktop:
         self.executor = None
         self.revision = 0
         self.hint_futures = ()
+        self.explicit_selection = False
         self.trade_window = None
         root.title("Hex Strategy")
         root.configure(bg=PAPER)
@@ -106,7 +107,7 @@ class Desktop:
         scrollbar.pack(side="right", fill="y")
         self.list.pack(side="left", fill="both", expand=True)
         self.list.bind("<Double-Button-1>", lambda event: self.commit())
-        self.list.bind("<<ListboxSelect>>", lambda event: self.draw())
+        self.list.bind("<<ListboxSelect>>", self.select_move)
         controls = tk.Frame(panel, bg=PAPER)
         controls.pack(fill="x", pady=(0, 10))
         self.confirm = ttk.Button(controls, text="Play move", command=self.commit)
@@ -130,6 +131,10 @@ class Desktop:
         label.pack(fill="x", padx=2, pady=3)
         return label
 
+    def select_move(self, event):
+        self.explicit_selection = True
+        self.draw()
+
     def draw(self):
         canvas, game = self.canvas, self.game
         canvas.delete("all")
@@ -151,6 +156,8 @@ class Desktop:
                 self.list.selection_clear(0, "end")
                 self.list.selection_set(index)
                 self.list.see(index)
+                self.explicit_selection = True
+                self.draw()
 
         selection = self.list.curselection()
         highlighted = self.actions[selection[0]] if selection and selection[0] < len(self.actions) else ()
@@ -219,6 +226,7 @@ class Desktop:
     def refresh(self):
         game = self.game
         self.actions = list(game.observe(0).actions)
+        self.explicit_selection = False
         self.list.delete(0, "end")
         for action in self.actions:
             self.list.insert("end", action_name(action))
@@ -348,7 +356,7 @@ class Desktop:
         revision = self.revision
         candidates = [action for _, action in ranked(observation, self.weights)[:3]]
         selected = self.list.curselection()
-        if selected and self.actions[selected[0]] not in candidates:
+        if self.explicit_selection and selected and self.actions[selected[0]] not in candidates:
             candidates.append(self.actions[selected[0]])
         if extra is not None:
             if not candidates:
@@ -360,7 +368,8 @@ class Desktop:
                 candidates.append(offer)
         if self.executor is None:
             self.executor = ProcessPoolExecutor(max_workers=worker_count())
-        jobs = submit(self.executor, observation, candidates, randbits(64), self.weights)
+        opponents = self.weights if self.session.difficulty == "Hard" else BASE
+        jobs = submit(self.executor, observation, candidates, randbits(64), self.weights, opponents)
         self.hint_futures = tuple(future for futures in jobs.values() for future in futures)
         self.hint.configure(state="disabled")
         self.footer.configure(text=f"Coach is simulating {len(candidates)*OUTCOMES:,} continuations…")

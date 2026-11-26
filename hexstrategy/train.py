@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from json import dumps
 from pathlib import Path
 from random import Random
+from tempfile import NamedTemporaryFile
 from time import perf_counter
 import argparse
 
@@ -36,9 +37,14 @@ def measure(pool, weights, seeds):
 
 def save(name, payload):
     target = ARTIFACTS / name
-    temporary = target.with_suffix(".tmp")
-    temporary.write_text(dumps(payload, indent=2) + "\n")
-    temporary.replace(target)
+    pending = NamedTemporaryFile(mode="w", encoding="utf-8", dir=target.parent, delete=False)
+    temporary = Path(pending.name)
+    try:
+        with pending:
+            pending.write(dumps(payload, indent=2) + "\n")
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def main():
