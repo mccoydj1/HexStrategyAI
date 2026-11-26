@@ -8,7 +8,7 @@ Four players share an island of 19 hexes. Each productive hex shows a resource a
 
 On your turn, you may play one eligible development card before or after rolling. Roll two dice. Each settlement next to a matching unblocked hex receives one card, and each city receives two. Apply supply shortages by resource. If multiple players are owed more than the supply can pay, nobody receives that resource. If only one player is owed the resource, they receive as much as the supply can pay.
 
-On a seven, each player with eight or more resource cards returns half their hand, rounding down. Move the robber to another hex, then steal one random resource card from an eligible opponent with a building on that hex. The robber suppresses its hex's production until moved. A knight moves the robber without causing discards.
+On a seven, each player with eight or more resource cards returns half their hand, rounding down. Move the robber to another hex, then choose an opponent with a building on that hex and draw one random resource card from their hand, if they hold any. The robber suppresses its hex's production until moved. A knight moves the robber without causing discards.
 
 After production or resolving a seven, build, trade, play an eligible development card, or end your turn. You can repeat construction and trading as long as the resources and pieces are available.
 
@@ -26,8 +26,8 @@ Each player has 15 roads, five settlements, and four cities. Supply trades norma
 The 25-card deck contains 14 knights, five victory points, two road building, two plenty, and two monopoly cards. Play at most one eligible action card per turn. Newly purchased action cards become eligible on a later turn. Victory-point cards stay private until they take you to the victory threshold during your turn, including on the turn you purchase them.
 
 - **Knight** moves the robber. The first player to play three knights earns the army award. A rival must play more knights than the holder to take it.
-- **Road building** places up to two legal roads without spending resources.
-- **Plenty** takes two available resource cards of your choice from the supply.
+- **Road building** places two legal roads without spending resources. If you can place only one road, place that one.
+- **Plenty** takes up to two available resource cards of your choice from the supply.
 - **Monopoly** names one resource and collects every opponent's cards of that type.
 - **Victory point** contributes one point.
 

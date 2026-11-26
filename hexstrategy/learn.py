@@ -3,6 +3,8 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 from random import Random
 from time import perf_counter
+import argparse
+import json
 
 from .ai import BASE, building_metrics, choose, play, ranked, simulate_batch, suggested_offer
 from .coach import worker_count
@@ -10,7 +12,7 @@ from .game import Game
 from .opening_search import seeds
 from .session import load_policy
 from .tactical import summary, tactical_choice
-from .train import save
+from .train import ARTIFACTS, save
 
 KINDS = ("end", "road", "settlement", "city", "buy", "bank", "knight", "roads",
          "monopoly", "plenty", "offer")
@@ -110,20 +112,40 @@ def match(pool, weights, coefficients, batch):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--holdout", action="store_true")
+    args = parser.parse_args()
     start = perf_counter()
     weights = load_policy()
     with ProcessPoolExecutor(max_workers=worker_count()) as pool:
-        jobs = ((weights, seed) for seed in seeds(TRAINING_SEED, 148))
-        rows = [row for row in pool.map(collect, jobs, chunksize=2) if row is not None]
-        coefficients = fit(rows)
-        save("causal-training.json", dict(seed=TRAINING_SEED, evaluated_positions=rows,
-             samples_per_action=SAMPLES, features=KINDS, coefficients=coefficients))
-        pilot_seed = 131073009
-        pilot = seeds(pilot_seed, 192)
-        control = match(pool, weights, None, pilot)
-        learned = match(pool, weights, coefficients, pilot)
-    save("causal-pilot.json", dict(seed=pilot_seed, control=asdict(summary(weights, control)),
-         learned=asdict(summary(weights, learned)), seconds=perf_counter()-start))
+        if args.holdout:
+            cached = json.loads((ARTIFACTS / "causal-training.json").read_text())
+            if tuple(cached["rollout_policy"]) != weights:
+                raise ValueError("Training checkpoint uses a different rollout policy.")
+            coefficients = cached["coefficients"]
+        else:
+            jobs = ((weights, seed) for seed in seeds(TRAINING_SEED, 148))
+            rows = []
+            for row in pool.map(collect, jobs, chunksize=2):
+                if row is not None:
+                    rows.append(row)
+                if len(rows) and len(rows) % 32 == 0:
+                    save("causal-training-progress.json", dict(seed=TRAINING_SEED,
+                        rollout_policy=weights, opponent_policy=BASE, evaluated_positions=rows))
+            coefficients = fit(rows)
+            save("causal-training.json", dict(seed=TRAINING_SEED, evaluated_positions=rows,
+                 samples_per_action=SAMPLES, features=KINDS, coefficients=coefficients,
+                 rollout_policy=weights, opponent_policy=BASE))
+        test_seed, count = (332581106, 1000) if args.holdout else (131073009, 192)
+        test = seeds(test_seed, count)
+        control = match(pool, weights, None, test)
+        learned = match(pool, weights, coefficients, test)
+    gained = sum(a != 0 and b == 0 for a, b in zip(control, learned))
+    lost = sum(a == 0 and b != 0 for a, b in zip(control, learned))
+    name = "causal-holdout.json" if args.holdout else "causal-pilot.json"
+    save(name, dict(seed=test_seed, control=asdict(summary(weights, control)),
+         learned=asdict(summary(weights, learned)), improved=gained, worsened=lost,
+         control_winners=control, learned_winners=learned, seconds=perf_counter()-start))
     print(summary(weights, control), summary(weights, learned), flush=True)
 
 
