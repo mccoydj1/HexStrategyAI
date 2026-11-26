@@ -45,7 +45,8 @@ class ReleasedEvidence(unittest.TestCase):
         baseline = json.loads((ARTIFACTS / "coaching.json").read_text())
         for artifact in ("coaching-optimized.json", "coaching-setup-cache.json",
                          "coaching-production-cache.json", "coaching-board-cache.json",
-                         "coaching-route-cache.json", "coaching-cython.json"):
+                         "coaching-route-cache.json", "coaching-cython.json",
+                         "coaching-cython-recheck.json"):
             with self.subTest(artifact=artifact):
                 optimized = json.loads((ARTIFACTS / artifact).read_text())
                 self.assertEqual(baseline["policy"], optimized["policy"])
