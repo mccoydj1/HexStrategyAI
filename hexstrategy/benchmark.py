@@ -5,7 +5,7 @@ from cProfile import Profile
 from pstats import Stats
 from os import cpu_count
 from pathlib import Path
-from platform import platform, python_version
+from platform import platform, python_implementation, python_version
 from time import perf_counter
 import argparse
 
@@ -36,7 +36,11 @@ def profile():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", action="store_true")
-    if parser.parse_args().profile:
+    parser.add_argument("--output", default="coaching.json")
+    arguments = parser.parse_args()
+    if Path(arguments.output).name != arguments.output:
+        parser.error("--output must be a filename within artifacts")
+    if arguments.profile:
         profile()
         return
     game = Game(907)
@@ -59,7 +63,8 @@ def main():
     model = next((line.split(":", 1)[1].strip() for line in cpu.read_text().splitlines()
                   if line.startswith("model name")), None) if cpu.exists() else None
     quota = Path("/sys/fs/cgroup/cpu.max")
-    environment = {"os": platform(), "python": python_version(), "reported_cpus": cpu_count(),
+    environment = {"os": platform(), "python": python_version(),
+                   "interpreter": python_implementation(), "reported_cpus": cpu_count(),
                    "cpu_model": model, "quota": quota.read_text().strip() if quota.exists() else None}
     environment["coaching_workers"] = worker_count()
     with ProcessPoolExecutor(max_workers=worker_count()) as pool:
@@ -73,7 +78,7 @@ def main():
             results.append(dict(case=name, game_seed=907, sampling_seed=4411,
                                 seat=obs.seat, turn=obs.turn, legal_actions=len(obs.actions),
                                 seconds=perf_counter()-start, estimates=list(map(asdict, measurements))))
-            save("coaching.json", dict(environment=environment, policy=weights, positions=results))
+            save(arguments.output, dict(environment=environment, policy=weights, positions=results))
             print(name, results[-1]["seconds"], flush=True)
 
 

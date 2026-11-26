@@ -2,6 +2,7 @@
   "environment": {
     "os": "Linux-6.18.57-x86_64-with-glibc2.41",
     "python": "3.12.14",
+    "interpreter": "CPython",
     "reported_cpus": 3,
     "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
     "quota": "200000 100000",
@@ -32,7 +33,7 @@
       "seat": 3,
       "turn": 0,
       "legal_actions": 54,
-      "seconds": 99.81147740699998,
+      "seconds": 95.50539726599982,
       "estimates": [
         {
           "action": [
@@ -78,21 +79,6 @@
             0.1787468387398403
           ],
           "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are grain 5, ore 5 out of 36 dice outcomes."
-        },
-        {
-          "action": [
-            "settlement",
-            0
-          ],
-          "games": 1000,
-          "wins": 2,
-          "unresolved": 0,
-          "probability": 0.002,
-          "interval": [
-            0.0005486435881207445,
-            0.00726280786349195
-          ],
-          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are ore 5 out of 36 dice outcomes."
         }
       ]
     },
@@ -100,24 +86,55 @@
       "case": "midgame",
       "game_seed": 907,
       "sampling_seed": 4411,
-      "seat": 3,
-      "turn": 36,
-      "legal_actions": 1,
-      "seconds": 13.100834574000146,
+      "seat": 1,
+      "turn": 37,
+      "legal_actions": 19,
+      "seconds": 53.06522085000006,
       "estimates": [
         {
           "action": [
-            "end"
+            "settlement",
+            33
           ],
           "games": 1000,
-          "wins": 228,
+          "wins": 242,
           "unresolved": 0,
-          "probability": 0.228,
+          "probability": 0.242,
           "interval": [
-            0.2030667729482006,
-            0.25501498366794134
+            0.2164742872986189,
+            0.26950032007992747
           ],
-          "explanation": "Keeps resources for later and passes the turn."
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are wood 2, ore 2 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "settlement",
+            39
+          ],
+          "games": 1000,
+          "wins": 211,
+          "unresolved": 0,
+          "probability": 0.211,
+          "interval": [
+            0.18684137276354668,
+            0.23737049364110407
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are wool 3, ore 2 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "settlement",
+            38
+          ],
+          "games": 1000,
+          "wins": 147,
+          "unresolved": 0,
+          "probability": 0.147,
+          "interval": [
+            0.12640395855176717,
+            0.1702977329390346
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are brick 5, wool 1 out of 36 dice outcomes."
         }
       ]
     }

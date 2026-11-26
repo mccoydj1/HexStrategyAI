@@ -6,13 +6,13 @@ A four-seat desktop strategy game for one human and three computer players. The 
 
 Use Python 3.10 or newer with Tk. On Debian or Ubuntu, install the distribution's `python3-tk` package if `python -m tkinter` cannot open a test window. On Windows and macOS, use a Python installer that includes Tcl/Tk.
 
-From the repository root, run:
+Launch from the repository root.
 
 ```sh
 python -m hexstrategy
 ```
 
-The application loads the selected policy in `artifacts/policy.json` when you launch it. It runs locally and requires no account, network connection, or follow-up training.
+The application loads the selected policy and the validated endgame search checkpoint when you launch it. The bundled policy runs locally with Python and Tcl/Tk.
 
 - **Board** lets you place highlighted pieces or move the robber. Select an item in the move list and use **Play move** for any action, including ambiguous board targets, discards, cards, and supply exchanges.
 - **Trade** opens a bundle editor. An incoming offer gives you a choice to accept, decline, or counter. Use **Compare offer** to simulate a draft before sending it.
@@ -33,6 +33,7 @@ python -m hexstrategy.validate
 python -m hexstrategy.benchmark
 python -m hexstrategy.benchmark --profile
 python -m hexstrategy.tactical --holdout
+python -m hexstrategy.learn
 ```
 
 The display test skips when a graphical display is unavailable. With Xvfb installed, use `xvfb-run -a python -m unittest discover -s tests -v` to exercise a complete desktop match and save/resume through the GUI. Training commands replace the JSON outputs for their experiment.

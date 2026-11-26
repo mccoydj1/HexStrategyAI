@@ -18,6 +18,7 @@ class DesktopMatch(unittest.TestCase):
             with patch("hexstrategy.__main__.randbits", return_value=421):
                 desktop = Desktop(root)
             root.update()
+            self.assertTrue(desktop.use_search)
             saved = False
             for _ in range(2500):
                 game = desktop.game

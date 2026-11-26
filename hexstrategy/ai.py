@@ -266,6 +266,8 @@ def strategic(obs, weights):
     """Score the opportunity cost of building against an explicit production plan."""
     if len(obs.actions) <= 1:
         return [(0, move) for move in obs.actions]
+    if obs.phase in ("robber", "trade_response"):
+        return ranked(obs, BASE)
     seat, board = obs.seat, obs.board
     hand = obs.hand
     sites_by_player, base_points, clear = building_metrics(board, obs.buildings)
@@ -304,7 +306,11 @@ def strategic(obs, weights):
                                 for i, (n, h) in enumerate(zip(COSTS[kind], resources)))
                     for kind, value in targets.items()), default=0)
 
+    site_scores = {}
+
     def site(v):
+        if v in site_scores:
+            return site_scores[v]
         value = sum((p*weights[i] + min(p, max(0, 6-totals[i]))*0.65)
                     for i, p in enumerate(pips[v]))
         if close:
@@ -317,6 +323,7 @@ def strategic(obs, weights):
             if resource and v in board.edges[e]:
                 i = RESOURCES.index(resource)
                 value += 0.5 + totals[i]*0.24 + pips[v][i]*0.23
+        site_scores[v] = value
         return value
 
     def road(e):
@@ -353,12 +360,14 @@ def strategic(obs, weights):
                 rating += 100 if own_score >= 8 else weights[12] + 4
         return rating
 
-    before = utility(hand)
+    before = None
     fallback = None
 
     def value(action):
-        nonlocal fallback
+        nonlocal before, fallback
         kind, *args = action
+        if before is None and kind in ("bank", "plenty", "monopoly"):
+            before = utility(hand)
         if kind == "settlement":
             return 30+site(args[0])
         if kind == "road":

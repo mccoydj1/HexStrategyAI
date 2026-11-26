@@ -238,6 +238,20 @@ class PublicInformation(unittest.TestCase):
         self.assertEqual(choose(first), choose(second))
         self.assertEqual(determinize(first, 234).observe(seat), second)
 
+    def test_hidden_development_cards_and_engine_rng_are_outside_the_observation(self):
+        game = advance(Game(14))
+        seat = game.active
+        opponents = [p for i, p in enumerate(game.players) if i != seat]
+        a, b = opponents[:2]
+        a.cards.append((game.deck.pop(), game.turn-1))
+        b.cards.append((game.deck.pop(), game.turn-1))
+        original = game.observe(seat)
+        a.cards, b.cards = b.cards, a.cards
+        game.rng.seed(12348)
+        altered = game.observe(seat)
+        self.assertEqual(original, altered)
+        self.assertEqual(determinize(original, 290).deck, determinize(altered, 290).deck)
+
     def test_sampled_match_respects_known_holdings_and_offer(self):
         game = advance(Game(9))
         seat = game.active

@@ -5,10 +5,11 @@ from secrets import randbits
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from .ai import BASE, ranked, suggested_offer
+from .ai import BASE, choose, ranked, suggested_offer
 from .coach import OUTCOMES, collect, submit, worker_count
 from .board import RESOURCES
-from .session import Session, load_policy
+from .session import Session, load_policy, load_search
+from .tactical import tactical_choice
 
 INK = "#152b33"
 PAPER = "#f5f0df"
@@ -51,6 +52,7 @@ class Desktop:
         self.root = root
         self.session = Session(randbits(64))
         self.weights = load_policy()
+        self.use_search = load_search(self.weights)
         self.executor = None
         self.revision = 0
         self.hint_futures = ()
@@ -284,14 +286,17 @@ class Desktop:
         game = self.game
         if game.actor != 0 and game.winner is None and self.trade_window is None:
             observation = game.observe(game.actor)
-            weights = self.weights if self.session.difficulty == "Hard" else BASE
-            choices = ranked(observation, weights)
-            pick = 0
-            if self.session.difficulty == "Easy":
+            if self.session.difficulty == "Hard":
+                action = (tactical_choice(observation, self.weights) if self.use_search
+                          else choose(observation, self.weights))
+            elif self.session.difficulty == "Easy":
+                choices = ranked(observation, BASE)
                 pick = min(len(choices)-1, (len(self.session.moves)*7) % 3)
-            action = choices[pick][1]
-            if action == ("end",):
-                action = suggested_offer(observation, weights) or action
+                action = choices[pick][1]
+                if action == ("end",):
+                    action = suggested_offer(observation) or action
+            else:
+                action = choose(observation)
             self.move(action)
 
     def trade_dialog(self):

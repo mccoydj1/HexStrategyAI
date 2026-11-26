@@ -21,167 +21,167 @@
     0.7,
     0.15
   ],
-  "wall_seconds": 2.780607537999913,
+  "wall_seconds": 4.7701692040000125,
   "hotspots": [
     {
       "file": "ai.py",
-      "line": 180,
+      "line": 194,
       "function": "play",
       "calls": 30,
-      "self_seconds": 0.035231447,
-      "cumulative_seconds": 2.754687391
+      "self_seconds": 0.051473278000000004,
+      "cumulative_seconds": 4.729442575
     },
     {
       "file": "ai.py",
-      "line": 131,
+      "line": 145,
       "function": "choose",
       "calls": 12656,
-      "self_seconds": 0.024257253000000003,
-      "cumulative_seconds": 1.8304540440000001
+      "self_seconds": 0.03178045,
+      "cumulative_seconds": 2.8917568190000003
     },
     {
       "file": "ai.py",
-      "line": 38,
+      "line": 53,
       "function": "ranked",
       "calls": 13050,
-      "self_seconds": 0.19943833800000002,
-      "cumulative_seconds": 1.7431819480000001
+      "self_seconds": 0.111228295,
+      "cumulative_seconds": 2.765788982
     },
     {
       "file": "~",
       "line": 0,
       "function": "<built-in method builtins.sorted>",
-      "calls": 34094,
-      "self_seconds": 0.055208194,
-      "cumulative_seconds": 1.016317602
+      "calls": 33700,
+      "self_seconds": 0.075052329,
+      "cumulative_seconds": 2.179801131
     },
     {
       "file": "ai.py",
-      "line": 250,
+      "line": 265,
       "function": "strategic",
       "calls": 3217,
-      "self_seconds": 0.087602045,
-      "cumulative_seconds": 0.7674105630000001
+      "self_seconds": 0.04576878,
+      "cumulative_seconds": 1.3326730480000002
+    },
+    {
+      "file": "ai.py",
+      "line": 142,
+      "function": "<genexpr>",
+      "calls": 66113,
+      "self_seconds": 0.09169234400000001,
+      "cumulative_seconds": 1.240013207
+    },
+    {
+      "file": "ai.py",
+      "line": 74,
+      "function": "value",
+      "calls": 60655,
+      "self_seconds": 0.141181466,
+      "cumulative_seconds": 1.1483208630000001
     },
     {
       "file": "game.py",
       "line": 107,
       "function": "observe",
       "calls": 12656,
-      "self_seconds": 0.12195673400000001,
-      "cumulative_seconds": 0.5790586010000001
-    },
-    {
-      "file": "ai.py",
-      "line": 128,
-      "function": "<genexpr>",
-      "calls": 66113,
-      "self_seconds": 0.034416352000000004,
-      "cumulative_seconds": 0.5712494610000001
-    },
-    {
-      "file": "~",
-      "line": 0,
-      "function": "<built-in method builtins.sum>",
-      "calls": 324973,
-      "self_seconds": 0.19120681,
-      "cumulative_seconds": 0.53725995
-    },
-    {
-      "file": "ai.py",
-      "line": 60,
-      "function": "value",
-      "calls": 60655,
-      "self_seconds": 0.10577246700000001,
-      "cumulative_seconds": 0.536833109
+      "self_seconds": 0.24871852500000002,
+      "cumulative_seconds": 1.1038188290000002
     },
     {
       "file": "~",
       "line": 0,
       "function": "<built-in method builtins.max>",
-      "calls": 668530,
-      "self_seconds": 0.148803227,
-      "cumulative_seconds": 0.47348466300000003
-    },
-    {
-      "file": "ai.py",
-      "line": 390,
-      "function": "<genexpr>",
-      "calls": 18873,
-      "self_seconds": 0.009432152000000001,
-      "cumulative_seconds": 0.402356963
-    },
-    {
-      "file": "ai.py",
-      "line": 345,
-      "function": "value",
-      "calls": 17132,
-      "self_seconds": 0.018120881000000002,
-      "cumulative_seconds": 0.39292481100000004
+      "calls": 641301,
+      "self_seconds": 0.28934776100000004,
+      "cumulative_seconds": 1.0227737110000001
     },
     {
       "file": "~",
       "line": 0,
-      "function": "<built-in method builtins.any>",
-      "calls": 476055,
-      "self_seconds": 0.225906773,
-      "cumulative_seconds": 0.392571877
+      "function": "<built-in method builtins.sum>",
+      "calls": 277110,
+      "self_seconds": 0.335811582,
+      "cumulative_seconds": 0.9579748100000001
+    },
+    {
+      "file": "ai.py",
+      "line": 413,
+      "function": "<genexpr>",
+      "calls": 12655,
+      "self_seconds": 0.009846208,
+      "cumulative_seconds": 0.8476011200000001
+    },
+    {
+      "file": "ai.py",
+      "line": 366,
+      "function": "value",
+      "calls": 11308,
+      "self_seconds": 0.023216711,
+      "cumulative_seconds": 0.8377549120000001
     },
     {
       "file": "~",
       "line": 0,
       "function": "<built-in method builtins.min>",
-      "calls": 222051,
-      "self_seconds": 0.061030684,
-      "cumulative_seconds": 0.334974529
+      "calls": 206379,
+      "self_seconds": 0.149556344,
+      "cumulative_seconds": 0.796279834
     },
     {
       "file": "game.py",
       "line": 172,
       "function": "legal",
       "calls": 90470,
-      "self_seconds": 0.06751022200000001,
-      "cumulative_seconds": 0.330728897
+      "self_seconds": 0.10256851800000001,
+      "cumulative_seconds": 0.7269654480000001
     },
     {
       "file": "game.py",
-      "line": 301,
+      "line": 305,
       "function": "apply",
       "calls": 11925,
-      "self_seconds": 0.043909427,
-      "cumulative_seconds": 0.290931724
+      "self_seconds": 0.089540755,
+      "cumulative_seconds": 0.658778265
     },
     {
       "file": "ai.py",
-      "line": 53,
-      "function": "deficit",
-      "calls": 17748,
-      "self_seconds": 0.008574653,
-      "cumulative_seconds": 0.21966236400000003
-    },
-    {
-      "file": "ai.py",
-      "line": 308,
+      "line": 329,
       "function": "road",
       "calls": 4012,
-      "self_seconds": 0.018557651,
-      "cumulative_seconds": 0.207115502
+      "self_seconds": 0.061851181000000005,
+      "cumulative_seconds": 0.525795581
+    },
+    {
+      "file": "ai.py",
+      "line": 67,
+      "function": "deficit",
+      "calls": 17748,
+      "self_seconds": 0.014144136000000002,
+      "cumulative_seconds": 0.5003012450000001
     },
     {
       "file": "game.py",
-      "line": 15,
+      "line": 16,
       "function": "route_length",
       "calls": 4777,
-      "self_seconds": 0.008881862,
-      "cumulative_seconds": 0.18880496700000002
+      "self_seconds": 0.013265527000000001,
+      "cumulative_seconds": 0.47045779600000004
     },
     {
       "file": "game.py",
-      "line": 29,
+      "line": 30,
       "function": "<genexpr>",
       "calls": 42412,
-      "self_seconds": 0.013652158000000001,
-      "cumulative_seconds": 0.17082734400000002
+      "self_seconds": 0.059015623,
+      "cumulative_seconds": 0.44255784600000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "calls": 190151,
+      "self_seconds": 0.26847580200000004,
+      "cumulative_seconds": 0.40112713800000005
     }
   ]
 }

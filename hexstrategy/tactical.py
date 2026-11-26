@@ -15,7 +15,7 @@ from .train import Result, save
 
 
 def tactical_choice(obs, weights):
-    if obs.seat != 0 or obs.phase != "action" or len(obs.actions) < 2:
+    if obs.phase != "action" or len(obs.actions) < 2:
         return choose(obs, weights)
     own = sum(piece[1] for piece in obs.buildings if piece and piece[0] == obs.seat)
     own += 2*((obs.longest == obs.seat)+(obs.army == obs.seat))
@@ -50,9 +50,13 @@ def tactical_choice(obs, weights):
     return alternative if alternative_wins >= first_wins+2 else first
 
 
+def test_player(obs, weights):
+    return tactical_choice(obs, weights) if obs.seat == 0 else choose(obs, weights)
+
+
 def trial(job):
     weights, seed, search = job
-    decision = tactical_choice if search else choose
+    decision = test_player if search else choose
     return play(Game(seed), (weights, BASE, BASE, BASE),
                 record_history=search, decision=decision)
 

@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from itertools import combinations_with_replacement, product
 from random import Random
+from typing import NamedTuple
 
 from .board import Board, RESOURCES
 
@@ -36,8 +37,7 @@ class Player:
     knights: int = 0
 
 
-@dataclass(frozen=True)
-class Observation:
+class Observation(NamedTuple):
     board: Board
     seat: int
     active: int
@@ -272,7 +272,7 @@ class Game:
                     if piece:
                         seat, amount = piece
                         requests[RESOURCES.index(tile.resource)][seat] += amount
-        paid = [[0]*5 for _ in self.players]
+        paid = [[0]*5 for _ in self.players] if self.record_history else None
         for resource, demands in enumerate(requests):
             shortage = sum(demands) > self.bank[resource]
             if shortage and sum(bool(n) for n in demands) > 1:
@@ -281,8 +281,9 @@ class Game:
                 amount = min(demand, self.bank[resource])
                 self.players[seat].hand[resource] += amount
                 self.bank[resource] -= amount
-                paid[seat][resource] = amount
-        if self.record_history:
+                if paid is not None:
+                    paid[seat][resource] = amount
+        if paid is not None:
             self.history.append(("production", roll, tuple(map(tuple, paid))))
 
     def road_length(self, seat):
@@ -419,7 +420,8 @@ class Game:
                     if other != seat:
                         player.hand[resource] += opponent.hand[resource]
                         opponent.hand[resource] = 0
-        if self.phase in ("action", "roll", "roads") and self.score(self.active, True) >= 10:
+        scoring_move = kind in ("settlement", "city", "road", "buy", "rob", "end")
+        if scoring_move and self.phase in ("action", "roll", "roads") and self.score(self.active, True) >= 10:
             self.winner = self.active
             self.phase = "finished"
             if self.record_history:

@@ -4,7 +4,7 @@ from math import isfinite
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 
-from .ai import BASE
+from .ai import BASE, interval
 from .game import Game
 
 ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"
@@ -23,6 +23,18 @@ def load_policy():
     if tuple(evidence["weights"]) != weights or evidence["games"] < 1000:
         raise ValueError("Unsupported policy artifact")
     return weights
+
+
+def load_search(weights):
+    path = ARTIFACTS / "tactical-holdout.json"
+    if not path.exists():
+        return False
+    evidence = json.loads(path.read_text())
+    before, after = evidence["baseline"], evidence["searched"]
+    gained, lost = evidence["improved"], evidence["worsened"]
+    return (tuple(after["weights"]) == tuple(before["weights"]) == weights
+            and after["games"] == before["games"] == 1000
+            and gained + lost > 0 and interval(gained, gained+lost)[0] > .5)
 
 
 class Session:
