@@ -44,3 +44,5 @@ python -m hexstrategy.robber_trial --holdout
 ```
 
 The display test skips when a graphical display is unavailable. With Xvfb installed, use `xvfb-run -a python -m unittest discover -s tests -v` to exercise a complete desktop match and save/resume through the GUI. Training commands replace the JSON outputs for their experiment.
+
+The compiled benchmark is optional. With Cython 3.1.4, setuptools, and a native compiler installed, `python -m hexstrategy.compile_trial` builds and measures a temporary copy of the Python source. The desktop launch uses the standard interpreter.

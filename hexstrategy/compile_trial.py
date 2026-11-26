@@ -1,4 +1,5 @@
 """Benchmark optional compilation of the existing Python sources in a temporary copy."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,12 @@ setup(ext_modules=cythonize(extensions, compiler_directives={
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", default="coaching-cython.json")
+    arguments = parser.parse_args()
+    if Path(arguments.output).name != arguments.output:
+        parser.error("--output must be a filename within artifacts")
+
     from Cython import __version__ as cython_version
 
     project = ARTIFACTS.parent
@@ -34,8 +41,10 @@ def main():
         environment["LDSHARED"] = "gcc -shared"
     with TemporaryDirectory(prefix="hexstrategy-compile-") as directory:
         workspace = Path(directory)
-        shutil.copytree(project / "hexstrategy", workspace / "hexstrategy",
-                        ignore=shutil.ignore_patterns("__pycache__"))
+        package = workspace / "hexstrategy"
+        package.mkdir()
+        for source in (project / "hexstrategy").glob("*.py"):
+            shutil.copy2(source, package)
         (workspace / "artifacts").mkdir()
         shutil.copy2(ARTIFACTS / "policy.json", workspace / "artifacts")
         (workspace / "build_trial.py").write_text(BUILD)
@@ -47,7 +56,7 @@ def main():
         evidence = json.loads((workspace / "artifacts/coaching-cython.json").read_text())
     evidence["environment"]["backend"] = f"Cython {cython_version} compiled Python modules"
     evidence["environment"]["compiler"] = environment.get("CC", " ".join(compiler))
-    save("coaching-cython.json", evidence)
+    save(arguments.output, evidence)
 
 
 if __name__ == "__main__":
