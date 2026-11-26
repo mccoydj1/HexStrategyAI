@@ -44,7 +44,8 @@ class ReleasedEvidence(unittest.TestCase):
     def test_optimized_rollouts_reproduce_the_original_seeded_estimates(self):
         baseline = json.loads((ARTIFACTS / "coaching.json").read_text())
         for artifact in ("coaching-optimized.json", "coaching-setup-cache.json",
-                         "coaching-production-cache.json", "coaching-board-cache.json"):
+                         "coaching-production-cache.json", "coaching-board-cache.json",
+                         "coaching-route-cache.json", "coaching-cython.json"):
             with self.subTest(artifact=artifact):
                 optimized = json.loads((ARTIFACTS / artifact).read_text())
                 self.assertEqual(baseline["policy"], optimized["policy"])

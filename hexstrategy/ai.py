@@ -290,6 +290,29 @@ def evaluate(obs, candidates, count=1000, seed=0, weights=BASE):
     return sorted(estimates, key=lambda result: -result.probability)
 
 
+@lru_cache(maxsize=4096)
+def production_profile(board, buildings, owned, weights):
+    pips = production(board)
+    totals = tuple(sum(pips[v][i]*buildings[v][1] for v in owned) for i in range(5))
+    scarcity = tuple(weights[i]*(1.1 if not totals[i] else .9 if totals[i] < 6 else .65)
+                     for i in range(5))
+    number_counts = [0]*13
+    if len(weights) >= 13:
+        for v in owned:
+            for t in board.adjoining[v]:
+                number_counts[board.tiles[t].number] += 1
+    return totals, scarcity, tuple(number_counts)
+
+
+@lru_cache(maxsize=128)
+def site_harbors(board):
+    harbors = [[] for _ in board.vertices]
+    for edge, resource in board.ports:
+        for vertex in board.edges[edge]:
+            harbors[vertex].append(None if resource is None else RESOURCES.index(resource))
+    return tuple(map(tuple, harbors))
+
+
 def strategic(obs, weights):
     """Score the opportunity cost of building against an explicit production plan."""
     if len(obs.actions) <= 1:
@@ -305,19 +328,12 @@ def strategic(obs, weights):
               for p, n in enumerate(base_points)]
     own_score = scores[seat] + sum(card == "point" for card, _ in obs.cards)
     pips = production(board)
-    totals = [sum(pips[v][i]*obs.buildings[v][1] for v in owned) for i in range(5)]
+    totals, scarcity, number_counts = production_profile(board, obs.buildings, owned, weights)
     close = len(weights) >= 13
     current_length = None
     opposition_lengths = None
-    number_counts = {}
-    if close:
-        for v in owned:
-            for t in board.adjoining[v]:
-                number = board.tiles[t].number
-                if number:
-                    number_counts[number] = number_counts.get(number, 0) + 1
-    scarcity = [weights[i]*(1.1 if not totals[i] else 0.9 if totals[i] < 6 else 0.65)
-                for i in range(5)]
+    available_best = None
+    harbors = site_harbors(board)
     connected = {v for e in own_roads for v in board.edges[e]}
     available = [v for v in connected if clear[v]]
     targets = {"city": 8 + weights[6], "buy": 6 + weights[7],
@@ -343,19 +359,18 @@ def strategic(obs, weights):
                     for i, p in enumerate(pips[v]))
         if close:
             numbers = [board.tiles[t].number for t in board.adjoining[v] if board.tiles[t].number]
-            value -= weights[10]*sum(number_counts.get(number, 0) for number in numbers)
+            value -= weights[10]*sum(number_counts[number] for number in numbers)
             value += weights[11]*min(pips[v][3]+totals[3], pips[v][4]+totals[4], 9)*0.2
-        if any(v in board.edges[e] and resource is None for e, resource in board.ports):
+        if None in harbors[v]:
             value += 1.7
-        for e, resource in board.ports:
-            if resource and v in board.edges[e]:
-                i = RESOURCES.index(resource)
+        for i in harbors[v]:
+            if i is not None:
                 value += 0.5 + totals[i]*0.24 + pips[v][i]*0.23
         site_scores[v] = value
         return value
 
     def road(e):
-        nonlocal current_length, opposition_lengths
+        nonlocal current_length, opposition_lengths, available_best
         a, b = board.edges[e]
         best = 0
         for v in (a, b):
@@ -372,7 +387,9 @@ def strategic(obs, weights):
                     best = max(best, site(n)*0.56)
         if obs.phase in ("opening_road", "roads"):
             return best
-        improvement = best - max((site(v)+3 for v in available), default=0)
+        if available_best is None:
+            available_best = max((site(v)+3 for v in available), default=0)
+        improvement = best - available_best
         route = len(own_roads) >= 3 and obs.longest != seat
         rating = improvement*0.82 - weights[8] + (weights[9] if route else 0)
         if close and route:

@@ -66,6 +66,11 @@ def robber_options(board, buildings, active, robber):
 
 def route_length(board, buildings, roads, seat):
     """Find the longest trail, stopping at another player's building."""
+    return _route_length(board, tuple(buildings), frozenset(roads), seat)
+
+
+@lru_cache(maxsize=16384)
+def _route_length(board, buildings, roads, seat):
     def walk(vertex, trail):
         piece = buildings[vertex]
         if trail and piece and piece[0] != seat:

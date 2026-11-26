@@ -32,12 +32,15 @@ python -m hexstrategy.trade_search
 python -m hexstrategy.validate
 python -m hexstrategy.benchmark
 python -m hexstrategy.benchmark --profile
+python -m hexstrategy.benchmark --cpu-probe
 python -m hexstrategy.tactical --holdout
 python -m hexstrategy.learn
 python -m hexstrategy.learn --holdout
 python -m hexstrategy.economy_search
 python -m hexstrategy.placement_trial
 python -m hexstrategy.placement_trial --holdout
+python -m hexstrategy.robber_trial
+python -m hexstrategy.robber_trial --holdout
 ```
 
 The display test skips when a graphical display is unavailable. With Xvfb installed, use `xvfb-run -a python -m unittest discover -s tests -v` to exercise a complete desktop match and save/resume through the GUI. Training commands replace the JSON outputs for their experiment.

@@ -1,0 +1,35 @@
+{
+  "game_seed": 907,
+  "sampling_seed": 4411,
+  "samples_per_position": 120,
+  "control_revision": "b710815",
+  "experiment": "route and production profile caching",
+  "assembly_order": [
+    "control",
+    "experiment",
+    "experiment",
+    "control"
+  ],
+  "opening_cpu_seconds": [
+    2.896341428,
+    2.370094908,
+    2.624126864,
+    3.128597427
+  ],
+  "midgame_cpu_seconds": [
+    1.7658324529999998,
+    1.508650817,
+    1.7863735640000002,
+    1.754426819
+  ],
+  "opening_outcomes": [
+    120,
+    29,
+    0
+  ],
+  "midgame_outcomes": [
+    120,
+    26,
+    0
+  ]
+}

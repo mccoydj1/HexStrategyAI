@@ -1,15 +1,16 @@
 """Persist actual coaching outcomes and environment data."""
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
+from json import dumps
 from cProfile import Profile
 from pstats import Stats
 from os import cpu_count
 from pathlib import Path
 from platform import platform, python_implementation, python_version
-from time import perf_counter
+from time import perf_counter, process_time
 import argparse
 
-from .ai import BASE, choose, play, ranked, suggested_offer
+from .ai import BASE, choose, play, ranked, simulate_batch, suggested_offer
 from .coach import collect, submit, worker_count
 from .game import Game
 from .session import load_policy
@@ -33,18 +34,8 @@ def profile():
                                        for location, values in entries]})
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", action="store_true")
-    parser.add_argument("--output", default="coaching.json")
-    arguments = parser.parse_args()
-    if Path(arguments.output).name != arguments.output:
-        parser.error("--output must be a filename within artifacts")
-    if arguments.profile:
-        profile()
-        return
+def benchmark_positions():
     game = Game(907)
-    weights = load_policy()
     cases = [("opening", game.observe(game.actor))]
     while game.winner is None:
         obs = game.observe(game.actor)
@@ -58,6 +49,32 @@ def main():
             game.apply(action)
     if len(cases) != 2:
         raise RuntimeError("Benchmark seed did not produce a suitable midgame position.")
+    return cases
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--cpu-probe", action="store_true")
+    parser.add_argument("--output", default="coaching.json")
+    arguments = parser.parse_args()
+    if Path(arguments.output).name != arguments.output:
+        parser.error("--output must be a filename within artifacts")
+    if arguments.profile:
+        profile()
+        return
+    weights = load_policy()
+    cases = benchmark_positions()
+    if arguments.cpu_probe:
+        results = []
+        for name, obs in cases:
+            action = ranked(obs, weights)[0][1]
+            started = process_time()
+            outcomes = simulate_batch(obs, action, 0, 120, 4411, weights)
+            results.append(dict(case=name, turn=obs.turn, cpu_seconds=process_time()-started,
+                                outcomes=outcomes))
+        print(dumps(results), flush=True)
+        return
     results = []
     cpu = Path("/proc/cpuinfo")
     model = next((line.split(":", 1)[1].strip() for line in cpu.read_text().splitlines()
