@@ -2,7 +2,11 @@
 
 A four-seat desktop strategy game for one human and three computer players. The board, pieces, controls, and copy are drawn and written for this project.
 
-## Launch
+## Play on Windows
+
+Extract `HexStrategy-Windows-x64.zip` in File Explorer, open the extracted **Hex Strategy** folder, and double-click **Hex Strategy.exe**. The archive bundles Python, Tcl/Tk, and the AI checkpoints for 64-bit Windows 10 and 11. Keep the extracted folder together. Use **Save** and **Open** in the game to manage your progress.
+
+## Run from source
 
 Use Python 3.10 or newer with Tk. On Debian or Ubuntu, install the distribution's `python3-tk` package if `python -m tkinter` cannot open a test window. On Windows and macOS, use a Python installer that includes Tcl/Tk.
 
@@ -46,3 +50,13 @@ python -m hexstrategy.robber_trial --holdout
 The display test skips when a graphical display is unavailable. With Xvfb installed, use `xvfb-run -a python -m unittest discover -s tests -v` to exercise a complete desktop match and save/resume through the GUI. Training commands replace the JSON outputs for their experiment.
 
 The compiled benchmark is optional. With Cython 3.1.4, setuptools, and a native compiler installed, `python -m hexstrategy.compile_trial` builds and measures a temporary copy of the Python source. The desktop launch uses the standard interpreter.
+
+## Build the Windows ZIP
+
+The packaging script takes the official [64-bit Python 3.13.11 embeddable ZIP](https://www.python.org/ftp/python/3.13.11/python-3.13.11-embed-amd64.zip) and the installation tree extracted from the matching [Tcl/Tk MSI](https://www.python.org/ftp/python/3.13.11/amd64/tcltk.msi). The tree must contain `DLLs`, `Lib/tkinter`, and `tcl`.
+
+```sh
+python packaging/build_windows_portable.py python-3.13.11-embed-amd64.zip extracted-tcltk dist/HexStrategy-Windows-x64.zip
+```
+
+The launcher is the bundled Python windowed executable with a startup module. That module enters the graphical game when the executable is opened directly and lets worker processes start normally when given interpreter arguments.

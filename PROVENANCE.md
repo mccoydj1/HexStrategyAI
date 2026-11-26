@@ -9,3 +9,5 @@ The publisher's rules and FAQ were consulted for gameplay mechanics. HexStrategy
 JSON files under `artifacts` contain measured program outputs and numerical policy weights produced by the commands in the README.
 
 The temporary compiled benchmark used Cython 3.1.4 under the Apache License 2.0 and GCC as a build tool. The application ships Python source and uses the standard Python runtime. [Cython license](https://github.com/cython/cython/blob/3.1.4/LICENSE.txt)
+
+The Windows ZIP bundles the official 64-bit Python 3.13.11 embeddable runtime and Tcl/Tk 8.6.15 files from that version’s Windows installer. The runtime’s license, Tcl/Tk’s license, and the zlib license travel with the ZIP. The launcher is a renamed copy of CPython’s original windowed executable. [CPython release](https://www.python.org/downloads/release/python-31311/) · [zlib license](https://zlib.net/zlib_license.html)
