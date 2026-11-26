@@ -79,5 +79,8 @@ class DesktopMatch(unittest.TestCase):
                 desktop.set_difficulty(None)
                 desktop.coach()
                 self.assertEqual(submit.call_count, 2)
+                desktop.move(desktop.actions[0])
+                desktop.coach()
+                self.assertEqual(submit.call_count, 3)
         finally:
             desktop.close() if desktop is not None else root.destroy()

@@ -145,7 +145,18 @@ def ranked(obs, weights=BASE):
     return sorted(((value(action), action) for action in obs.actions), key=lambda pair: -pair[0])
 
 
+@lru_cache(maxsize=256)
+def opening_choice(observation, weights):
+    return ranked(observation, weights)[0][1]
+
+
 def choose(observation, weights=BASE):
+    if observation.phase in ("opening", "opening_road"):
+        # All setup inputs used by the policy are in the current observation.
+        # Removing the event log lets identical rollout prefixes share a decision.
+        if observation.history:
+            observation = observation._replace(history=())
+        return opening_choice(observation, weights)
     action = ranked(observation, weights)[0][1]
     if action == ("end",):
         return suggested_offer(observation, weights) or action

@@ -32,8 +32,10 @@ class ReleasedEvidence(unittest.TestCase):
 
     def test_optimized_rollouts_reproduce_the_original_seeded_estimates(self):
         baseline = json.loads((ARTIFACTS / "coaching.json").read_text())
-        optimized = json.loads((ARTIFACTS / "coaching-optimized.json").read_text())
-        self.assertEqual(baseline["policy"], optimized["policy"])
-        for original, revised in zip(baseline["positions"], optimized["positions"], strict=True):
-            self.assertEqual({k: v for k, v in original.items() if k != "seconds"},
-                             {k: v for k, v in revised.items() if k != "seconds"})
+        for artifact in ("coaching-optimized.json", "coaching-setup-cache.json"):
+            with self.subTest(artifact=artifact):
+                optimized = json.loads((ARTIFACTS / artifact).read_text())
+                self.assertEqual(baseline["policy"], optimized["policy"])
+                for original, revised in zip(baseline["positions"], optimized["positions"], strict=True):
+                    self.assertEqual({k: v for k, v in original.items() if k != "seconds"},
+                                     {k: v for k, v in revised.items() if k != "seconds"})
