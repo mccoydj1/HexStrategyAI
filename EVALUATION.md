@@ -45,3 +45,7 @@ The route-length and production-profile cache reproduced both seeded coaching po
 An optional Cython 3.1.4 experiment compiled the same Python game and policy modules in a temporary directory. All 24 application tests passed in that copy. Full hints took 39.68 s at setup and 25.53 s at midgame, with the same outcomes as the uncompiled runs. The desktop application uses the standard Python runtime. [Compiled benchmark](artifacts/coaching-cython.json)
 
 Running the documented compile command end to end produced the same seeded estimates again, at 78.12 s during setup and 41.22 s at midgame. This observed variation leaves the three-second target open. [Compiled recheck](artifacts/coaching-cython-recheck.json)
+
+Sharing the deterministic setup prefix and preparing the observed card population once per batch preserved all seeded estimates. That run took 64.55 s at setup and 41.96 s at midgame. [Shared-setup benchmark](artifacts/coaching-shared-setup.json)
+
+A targeted second trade offer after a decline won 64 of 144 pilot games, compared with 63 for Hard on the same seeds. The pilot recorded 603 retry offers. This experimental policy remains outside the released Hard policy. [Trade-retry pilot](artifacts/trade-retry-pilot.json)

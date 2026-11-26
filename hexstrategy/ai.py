@@ -1,8 +1,10 @@
 """Observation-only policies and paired, information-set rollouts."""
+from copy import copy
 from dataclasses import dataclass
 from functools import lru_cache
 from math import sqrt
 from random import Random
+from typing import NamedTuple
 
 from .board import RESOURCES
 from .game import COSTS, DECK, SETUP, Game, Player, port_rates, route_length
@@ -173,35 +175,53 @@ def choose(observation, weights=BASE):
     return action
 
 
+class _WorldPopulation(NamedTuple):
+    minimum: tuple
+    resources: tuple
+    deck: tuple
+    recent_buys: int
+
+
+def _world_population(obs, minimum):
+    minimum = public_minimum(obs) if minimum is None else minimum
+    unseen = tuple(i for i, bank in enumerate(obs.bank)
+                   for _ in range(19-bank-sum(hand[i] for hand in minimum)))
+    deck = list(DECK)
+    for card in list(obs.revealed) + [card for card, _ in obs.cards]:
+        deck.remove(card)
+    last_end = max((i for i, event in enumerate(obs.history) if event[1] == "end"), default=-1)
+    recent = sum(event[0] == obs.active and event[1] == "buy"
+                 for event in obs.history[last_end+1:])
+    return _WorldPopulation(tuple(map(tuple, minimum)), unseen, tuple(deck), recent)
+
+
 def determinize(obs, seed, minimum=None):
     """Sample hidden cards subject to visible inventories and acquisition timing."""
+    return _sample_game(obs, seed, _world_population(obs, minimum))
+
+
+def _sample_game(obs, seed, population, record_history=True):
     game = Game.__new__(Game)
     game.rng = rng = Random(seed)
-    copy = ("board", "active", "phase", "turn", "setup", "anchor", "robber", "longest",
+    attributes = ("board", "active", "phase", "turn", "setup", "anchor", "robber", "longest",
             "army", "free_roads", "resume", "used_card", "offer", "traded")
-    for attr in copy:
+    for attr in attributes:
         setattr(game, attr, getattr(obs, attr))
     for attr in ("buildings", "roads", "bank", "pending", "revealed", "seating"):
         setattr(game, attr, list(getattr(obs, attr)))
     game.winner = None
     game.dice = None
-    game.history = list(obs.history)
-    game.record_history = True
+    game.history = list(obs.history) if record_history else []
+    game.record_history = record_history
     game.players = [Player(knights=n) for n in obs.knights]
     player = game.players[obs.seat]
     player.hand = list(obs.hand)
     player.cards = list(obs.cards)
-    minimum = public_minimum(obs) if minimum is None else minimum
-    unseen = [i for i, bank in enumerate(obs.bank)
-              for _ in range(19-bank-sum(hand[i] for hand in minimum))]
+    minimum, resources, available_cards, recent = population
+    unseen = list(resources)
     rng.shuffle(unseen)
-    deck = list(DECK)
-    for card in list(obs.revealed) + [card for card, _ in obs.cards]:
-        deck.remove(card)
+    deck = list(available_cards)
     rng.shuffle(deck)
-    recent = sum(event[0] == obs.active and event[1] == "buy"
-                 for event in reversed(obs.history[1+max(
-                     (i for i, e in enumerate(obs.history) if e[1] == "end"), default=-1):]))
     for i, opponent in enumerate(game.players):
         if i == obs.seat:
             continue
@@ -251,18 +271,52 @@ def interval(wins, total):
     return max(0., center-offset), min(1., center+offset)
 
 
+def _apply_first_action(game, action):
+    if action[0] == "offer":
+        game.trade_offer(*action[1:])
+    elif action != ("wait",):
+        game.step(action)
+
+
+def _setup_prefix(obs, action, population, policies):
+    minimum, unseen, _, _ = population
+    if (obs.phase not in ("opening", "opening_road") or unseen
+            or obs.deck_size != len(DECK) or any(obs.development_totals)
+            or tuple(map(sum, minimum)) != obs.card_totals):
+        return None
+    game = _sample_game(obs, 0, population, record_history=False)
+    _apply_first_action(game, action)
+    while game.phase in ("opening", "opening_road"):
+        seat = game.actor
+        game.apply(choose(game.observe(seat), policies[seat]))
+    return game
+
+
+def _resume_setup(prefix, seed, deck):
+    game = copy(prefix)
+    game.rng = Random(seed)
+    game.deck = list(deck)
+    game.rng.shuffle(game.deck)
+    for name in ("buildings", "roads", "bank", "pending", "revealed", "seating", "history"):
+        setattr(game, name, list(getattr(prefix, name)))
+    game.players = [Player(hand=list(player.hand), cards=list(player.cards), knights=player.knights)
+                    for player in prefix.players]
+    return game
+
+
 def simulate_batch(obs, action, start, count, seed, weights, opponent_weights=None):
     """Return actual wins and unfinished games in a disjoint seed range."""
     wins = unresolved = 0
-    minimum = public_minimum(obs)
+    population = _world_population(obs, None)
     policies = tuple(weights if i == obs.seat else opponent_weights or weights for i in range(4))
+    prefix = _setup_prefix(obs, action, population, policies)
     for index in range(start, start+count):
         world = Random(seed+index).getrandbits(64)
-        game = determinize(obs, world, minimum)
-        if action[0] == "offer":
-            game.trade_offer(*action[1:])
-        elif action != ("wait",):
-            game.step(action)
+        if prefix is None:
+            game = _sample_game(obs, world, population, record_history=False)
+            _apply_first_action(game, action)
+        else:
+            game = _resume_setup(prefix, world, population.deck)
         winner = play(game, policies, max(450, obs.turn+300), record_history=False)
         wins += winner == obs.seat
         unresolved += winner is None
@@ -653,7 +707,7 @@ def opening_plan(obs, options, weights, pips):
     return sorted(scored, key=lambda pair: -pair[0])
 
 
-def targeted_offer(obs, strength):
+def targeted_offer(obs, strength, exclude=()):
     seat, hand, board = obs.seat, obs.hand, obs.board
     reachable = {v for edge, owner in enumerate(obs.roads) if owner == seat
                  for v in board.edges[edge] if not obs.buildings[v] and
@@ -680,7 +734,7 @@ def targeted_offer(obs, strength):
     best = None
     best_value = 0.0
     for other, total in enumerate(obs.card_totals):
-        if other == seat or not total or points[other] >= 9:
+        if other == seat or other in exclude or not total or points[other] >= 9:
             continue
         income = [sum(pips[v][i]*piece[1] for v, piece in enumerate(obs.buildings)
                       if piece and piece[0] == other) for i in range(5)]

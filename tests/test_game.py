@@ -1,6 +1,7 @@
 import json
 from collections import Counter
 from pathlib import Path
+from random import Random
 import tempfile
 import unittest
 
@@ -302,6 +303,22 @@ class PublicInformation(unittest.TestCase):
         first = simulate_batch(observation, action, 0, 2, 11, BASE)
         second = simulate_batch(observation, action, 2, 2, 11, BASE)
         self.assertEqual(full, tuple(a+b for a, b in zip(first, second)))
+
+    def test_shared_setup_prefix_matches_independent_games(self):
+        game = Game(12)
+        for _ in range(2):
+            observation = game.observe(game.actor)
+            action = observation.actions[0]
+            winners = []
+            for index in range(6):
+                world = Random(711+index).getrandbits(64)
+                replica = determinize(observation, world)
+                replica.step(action)
+                winners.append(play(replica, (BASE,)*4, record_history=False))
+            self.assertEqual(simulate_batch(observation, action, 0, 6, 711, BASE),
+                             (6, winners.count(observation.seat), winners.count(None)))
+            self.assertEqual(game.observe(game.actor), observation)
+            game.step(action)
 
     def test_coach_rejects_insufficient_evidence(self):
         game = Game(12)
