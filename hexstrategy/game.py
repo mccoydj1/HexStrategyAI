@@ -1,5 +1,6 @@
 """Authoritative four-player rules and player-scoped observations."""
 from dataclasses import dataclass, field
+from functools import lru_cache
 from itertools import combinations_with_replacement, product
 from random import Random
 from typing import NamedTuple
@@ -11,6 +12,56 @@ COSTS = {"road": (1, 1, 0, 0, 0), "settlement": (1, 1, 1, 1, 0),
          "city": (0, 0, 0, 2, 3), "buy": (0, 0, 1, 1, 1)}
 DECK = ("knight",)*14 + ("point",)*5 + ("roads",)*2 + ("plenty",)*2 + ("monopoly",)*2
 SETUP = (0, 1, 2, 3, 3, 2, 1, 0)
+
+
+@lru_cache(maxsize=4096)
+def port_rates(board, buildings, seat):
+    rates = [4]*5
+    general = 4
+    for edge, resource in board.ports:
+        a, b = board.edges[edge]
+        first, second = buildings[a], buildings[b]
+        if (first and first[0] == seat) or (second and second[0] == seat):
+            if resource is None:
+                general = 3
+            else:
+                rates[RESOURCES.index(resource)] = 2
+    return tuple(min(rate, general) for rate in rates)
+
+
+@lru_cache(maxsize=128)
+def productive_tiles(board):
+    return tuple(tuple((index, RESOURCES.index(tile.resource), board.corners[index])
+                       for index, tile in enumerate(board.tiles) if tile.number == roll)
+                 for roll in range(1, 13))
+
+
+@lru_cache(maxsize=8192)
+def production_requests(board, buildings, roll, robber):
+    requests = {}
+    for index, resource, corners in productive_tiles(board)[roll-1]:
+        if index == robber:
+            continue
+        for vertex in corners:
+            piece = buildings[vertex]
+            if piece:
+                seat, amount = piece
+                demands = requests.setdefault(resource, {})
+                demands[seat] = demands.get(seat, 0) + amount
+    return tuple((resource, tuple(demands.items())) for resource, demands in requests.items())
+
+
+@lru_cache(maxsize=8192)
+def robber_options(board, buildings, active, robber):
+    actions = []
+    for tile, vertices in enumerate(board.corners):
+        if tile == robber:
+            continue
+        victims = {buildings[v][0] for v in vertices if buildings[v]}
+        victims.discard(active)
+        actions.extend(("rob", tile, victim)
+                       for victim in (sorted(victims) if victims else (None,)))
+    return tuple(actions)
 
 
 def route_length(board, buildings, roads, seat):
@@ -147,31 +198,13 @@ class Game:
                            if self.roads[e] is None})
 
     def rates(self, seat):
-        rates = [4]*5
-        general = 4
-        for edge, resource in self.board.ports:
-            a, b = self.board.edges[edge]
-            first, second = self.buildings[a], self.buildings[b]
-            if (first and first[0] == seat) or (second and second[0] == seat):
-                if resource is None:
-                    general = 3
-                else:
-                    rates[RESOURCES.index(resource)] = 2
-        if general == 3:
-            return [min(rate, 3) for rate in rates]
-        return rates
+        return list(port_rates(self.board, tuple(self.buildings), seat))
 
     def rate(self, seat, give):
         return self.rates(seat)[give]
 
     def robber_moves(self):
-        for tile, vertices in enumerate(self.board.corners):
-            if tile == self.robber:
-                continue
-            victims = {self.buildings[v][0] for v in vertices if self.buildings[v]}
-            victims.discard(self.active)
-            for victim in sorted(victims) if victims else (None,):
-                yield ("rob", tile, victim)
+        yield from robber_options(self.board, tuple(self.buildings), self.active, self.robber)
 
     def legal(self):
         seat = self.actor
@@ -271,20 +304,12 @@ class Game:
             self.bank[i] -= direction*n
 
     def produce(self, roll):
-        requests = [[0]*4 for _ in range(5)]
-        for index, tile in enumerate(self.board.tiles):
-            if tile.number == roll and index != self.robber:
-                for vertex in self.board.corners[index]:
-                    piece = self.buildings[vertex]
-                    if piece:
-                        seat, amount = piece
-                        requests[RESOURCES.index(tile.resource)][seat] += amount
+        requests = production_requests(self.board, tuple(self.buildings), roll, self.robber)
         paid = [[0]*5 for _ in self.players] if self.record_history else None
-        for resource, demands in enumerate(requests):
-            shortage = sum(demands) > self.bank[resource]
-            if shortage and sum(bool(n) for n in demands) > 1:
+        for resource, demands in requests:
+            if len(demands) > 1 and sum(n for _, n in demands) > self.bank[resource]:
                 continue
-            for seat, demand in enumerate(demands):
+            for seat, demand in demands:
                 amount = min(demand, self.bank[resource])
                 self.players[seat].hand[resource] += amount
                 self.bank[resource] -= amount

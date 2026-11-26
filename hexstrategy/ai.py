@@ -5,7 +5,7 @@ from math import sqrt
 from random import Random
 
 from .board import RESOURCES
-from .game import COSTS, DECK, SETUP, Game, Player, route_length
+from .game import COSTS, DECK, SETUP, Game, Player, port_rates, route_length
 
 BASE = (1.0, 1.0, 0.85, 1.15, 1.1, 1.0, 1.0, 1.0)
 REASONS = {
@@ -50,12 +50,34 @@ def building_metrics(board, buildings):
     return tuple(map(tuple, owned)), tuple(points), tuple(clear)
 
 
+@lru_cache(maxsize=8192)
+def robber_values(board, buildings, seat, longest, army):
+    _, base_points, _ = building_metrics(board, buildings)
+    points = tuple(n + 2*((longest == p)+(army == p)) for p, n in enumerate(base_points))
+    denial_weights = tuple(-3 if p == seat else 1 + .22*points[p] for p in range(4))
+    denials = tuple(
+        sum(piece[1]*denial_weights[piece[0]]
+            for vertex in corners if (piece := buildings[vertex]))
+        * (6-abs(7-tile.number))
+        for tile, corners in zip(board.tiles, board.corners)
+    )
+    return denials, tuple(point*.45+3 for point in points)
+
+
 def ranked(obs, weights=BASE):
     if len(weights) in (10, 13, 14, 15):
         return strategic(obs, weights)
     if len(obs.actions) <= 1:
         return [(0, a) for a in obs.actions]
     board, seat, hand = obs.board, obs.seat, obs.hand
+    if obs.phase == "robber":
+        denials, theft = robber_values(board, obs.buildings, seat, obs.longest, obs.army)
+        options = []
+        for action in obs.actions:
+            _, tile, victim = action
+            bonus = theft[victim] if victim is not None and obs.card_totals[victim] else 0
+            options.append((denials[tile] + bonus, action))
+        return sorted(options, key=lambda pair: -pair[0])
     sites = site_values(board, weights[:5])
     sites_by_player, base_points, clear = building_metrics(board, obs.buildings)
     owned = sites_by_player[seat]
@@ -70,7 +92,6 @@ def ranked(obs, weights=BASE):
 
     accessible = None
     current_deficit = None
-    tile_denials = {}
 
     def value(action):
         nonlocal accessible, current_deficit
@@ -98,23 +119,12 @@ def ranked(obs, weights=BASE):
                 4 if obs.roads.count(seat) >= 4 and obs.longest != seat else 0)
         if kind == "buy":
             return 10.5*weights[7] + 2*(points[seat] >= 7)
-        if kind == "rob":
-            t, victim = args
-            if t not in tile_denials:
-                number = board.tiles[t].number
-                denial = sum(piece[1] * (-3 if piece[0] == seat else 1 + .22*points[piece[0]])
-                             for v in board.corners[t] if (piece := obs.buildings[v]))
-                tile_denials[t] = denial * (6-abs(7-number))
-            theft = points[victim]*0.45+3 if victim is not None and obs.card_totals[victim] else 0
-            return tile_denials[t] + theft
         if kind == "discard":
             remaining = tuple(h-n for h, n in zip(hand, args[0]))
             return -4*deficit(remaining) + sum(min(n, 3)*w for n, w in zip(remaining, weights))
         if kind == "bank":
             give, get = args
-            rate = min((2 if resource == RESOURCES[give] else 3
-                        for e, resource in board.ports if resource in (None, RESOURCES[give])
-                        and any(v in owned for v in board.edges[e])), default=4)
+            rate = port_rates(board, obs.buildings, seat)[give]
             after = list(hand)
             after[give] -= rate
             after[get] += 1
@@ -396,9 +406,7 @@ def strategic(obs, weights):
             return weights[7]+5 + (own_score >= 8)*3
         if kind == "bank":
             give, get = args
-            rate = min((2 if resource == RESOURCES[give] else 3
-                        for e, resource in board.ports if resource in (None, RESOURCES[give])
-                        and any(v in owned for v in board.edges[e])), default=4)
+            rate = port_rates(board, obs.buildings, seat)[give]
             after = list(hand)
             after[give] -= rate
             after[get] += 1
@@ -526,6 +534,15 @@ def public_minimum(obs):
     return hands
 
 
+def newly_affordable(before, after):
+    labels = {"road": "a road", "settlement": "a settlement", "city": "a city",
+              "buy": "a development card"}
+    gained = [labels[kind] for kind, cost in COSTS.items()
+              if all(have >= need for have, need in zip(after, cost))
+              and any(have < need for have, need in zip(before, cost))]
+    return " It would cover the resource cost of " + " or ".join(gained) + "." if gained else ""
+
+
 def explain(obs, action):
     kind, *args = action
     reason = REASONS[kind]
@@ -534,6 +551,28 @@ def explain(obs, action):
         if sum(pips):
             holdings = ", ".join(f"{RESOURCES[i]} {n}" for i, n in enumerate(pips) if n)
             reason += f" Site production weights are {holdings} out of 36 dice outcomes."
+    elif kind == "road":
+        board = obs.board
+        connected = {vertex for edge, owner in enumerate(obs.roads) if owner == obs.seat
+                     for vertex in board.edges[edge]}
+        sites = sum(vertex not in connected and obs.buildings[vertex] is None
+                    and not any(obs.buildings[n] for n in board.neighbors[vertex])
+                    for vertex in board.edges[args[0]])
+        if sites:
+            reason += f" Connects directly to {sites} new settlement site" + ("." if sites == 1 else "s.")
+        remaining = 14 - obs.roads.count(obs.seat)
+        reason += f" You would have {remaining} roads left in reserve."
+    elif kind == "bank":
+        give, get = args
+        rate = port_rates(obs.board, obs.buildings, obs.seat)[give]
+        after = list(obs.hand)
+        after[give] -= rate
+        after[get] += 1
+        reason += f" This exchange costs {rate} {RESOURCES[give]} for one {RESOURCES[get]}."
+        reason += newly_affordable(obs.hand, after)
+    elif kind == "end" and sum(obs.hand) > 7:
+        total = sum(obs.hand)
+        reason += f" With {total} resources in hand, a seven would require returning {total//2}."
     elif kind == "rob":
         tile, victim = args
         number = obs.board.tiles[tile].number
@@ -550,8 +589,11 @@ def explain(obs, action):
         i = args[0]
         reason += f" Opponents collectively hold {19-obs.bank[i]-obs.hand[i]} {RESOURCES[i]}."
     elif kind == "offer":
-        opponent = args[0]
+        opponent, give, get = args[:3]
+        after = tuple(have - outgoing + incoming for have, outgoing, incoming
+                      in zip(obs.hand, give, get))
         reason += f" This recipient has {obs.card_totals[opponent]} resources."
+        reason += newly_affordable(obs.hand, after)
     return reason
 
 
