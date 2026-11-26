@@ -1,0 +1,138 @@
+{
+  "environment": {
+    "os": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "python": "3.12.14",
+    "reported_cpus": 3,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "quota": "200000 100000"
+  },
+  "policy": [
+    1.258,
+    1.055,
+    1.394,
+    1.332,
+    1.707,
+    2.443,
+    2.934,
+    4.725,
+    3.733,
+    2.038,
+    0.509,
+    1.105,
+    1.384
+  ],
+  "positions": [
+    {
+      "case": "opening",
+      "game_seed": 907,
+      "sampling_seed": 4411,
+      "seat": 1,
+      "turn": 0,
+      "legal_actions": 54,
+      "seconds": 93.49998396599995,
+      "estimates": [
+        {
+          "action": [
+            "settlement",
+            31
+          ],
+          "games": 1000,
+          "wins": 237,
+          "unresolved": 0,
+          "probability": 0.237,
+          "interval": [
+            0.21168136426041714,
+            0.2643315107029847
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are wood 4, brick 5, ore 3 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "settlement",
+            8
+          ],
+          "games": 1000,
+          "wins": 228,
+          "unresolved": 0,
+          "probability": 0.228,
+          "interval": [
+            0.2030667729482006,
+            0.25501498366794134
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are grain 5, ore 5 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "settlement",
+            19
+          ],
+          "games": 1000,
+          "wins": 161,
+          "unresolved": 0,
+          "probability": 0.161,
+          "interval": [
+            0.13952453255948763,
+            0.18507000969371865
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage. Site production weights are brick 4, wool 5, ore 3 out of 36 dice outcomes."
+        }
+      ]
+    },
+    {
+      "case": "midgame",
+      "game_seed": 907,
+      "sampling_seed": 4411,
+      "seat": 1,
+      "turn": 36,
+      "legal_actions": 14,
+      "seconds": 43.51822620600001,
+      "estimates": [
+        {
+          "action": [
+            "city",
+            31
+          ],
+          "games": 1000,
+          "wins": 317,
+          "unresolved": 0,
+          "probability": 0.317,
+          "interval": [
+            0.28890749002619664,
+            0.34649310357951646
+          ],
+          "explanation": "Adds a point and doubles production at the selected site. Site production weights are wood 4, brick 5, ore 3 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "city",
+            46
+          ],
+          "games": 1000,
+          "wins": 268,
+          "unresolved": 0,
+          "probability": 0.268,
+          "interval": [
+            0.24147419135844175,
+            0.2963014245788558
+          ],
+          "explanation": "Adds a point and doubles production at the selected site. Site production weights are wool 3, grain 5 out of 36 dice outcomes."
+        },
+        {
+          "action": [
+            "city",
+            41
+          ],
+          "games": 1000,
+          "wins": 194,
+          "unresolved": 0,
+          "probability": 0.194,
+          "interval": [
+            0.1706814295673282,
+            0.21966054662583143
+          ],
+          "explanation": "Adds a point and doubles production at the selected site. Site production weights are grain 5 out of 36 dice outcomes."
+        }
+      ]
+    }
+  ]
+}

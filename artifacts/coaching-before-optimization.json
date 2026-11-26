@@ -1,0 +1,135 @@
+{
+  "environment": {
+    "os": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "python": "3.12.14",
+    "reported_cpus": 3,
+    "cpu_model": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "quota": "200000 100000"
+  },
+  "policy": [
+    1.274,
+    1.278,
+    1.183,
+    1.112,
+    1.665,
+    3.535,
+    4.609,
+    6.241,
+    3.848,
+    1.99
+  ],
+  "positions": [
+    {
+      "case": "opening",
+      "game_seed": 907,
+      "sampling_seed": 4411,
+      "seat": 1,
+      "turn": 0,
+      "legal_actions": 54,
+      "seconds": 122.97900004400003,
+      "estimates": [
+        {
+          "action": [
+            "settlement",
+            19
+          ],
+          "games": 1000,
+          "wins": 162,
+          "unresolved": 0,
+          "probability": 0.162,
+          "interval": [
+            0.14046411184834365,
+            0.1861227768878915
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage."
+        },
+        {
+          "action": [
+            "settlement",
+            31
+          ],
+          "games": 1000,
+          "wins": 97,
+          "unresolved": 0,
+          "probability": 0.097,
+          "interval": [
+            0.08016916179032346,
+            0.11691520554903381
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage."
+        },
+        {
+          "action": [
+            "settlement",
+            25
+          ],
+          "games": 1000,
+          "wins": 94,
+          "unresolved": 0,
+          "probability": 0.094,
+          "interval": [
+            0.07743417357376414,
+            0.11367315431650646
+          ],
+          "explanation": "Adds a point and production. Site values account for dice odds and resource coverage."
+        }
+      ]
+    },
+    {
+      "case": "midgame",
+      "game_seed": 907,
+      "sampling_seed": 4411,
+      "seat": 1,
+      "turn": 36,
+      "legal_actions": 14,
+      "seconds": 113.9420132780001,
+      "estimates": [
+        {
+          "action": [
+            "city",
+            31
+          ],
+          "games": 1000,
+          "wins": 201,
+          "unresolved": 0,
+          "probability": 0.201,
+          "interval": [
+            0.1773272150422719,
+            0.22696118653209002
+          ],
+          "explanation": "Adds a point and doubles production at the selected site."
+        },
+        {
+          "action": [
+            "city",
+            46
+          ],
+          "games": 1000,
+          "wins": 174,
+          "unresolved": 0,
+          "probability": 0.174,
+          "interval": [
+            0.15176235026548396,
+            0.19873269626709783
+          ],
+          "explanation": "Adds a point and doubles production at the selected site."
+        },
+        {
+          "action": [
+            "city",
+            41
+          ],
+          "games": 1000,
+          "wins": 97,
+          "unresolved": 0,
+          "probability": 0.097,
+          "interval": [
+            0.08016916179032346,
+            0.11691520554903381
+          ],
+          "explanation": "Adds a point and doubles production at the selected site."
+        }
+      ]
+    }
+  ]
+}
